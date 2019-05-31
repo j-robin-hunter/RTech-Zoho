@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!--
+/**
+* Copyright 2019 © Roma Technology Ltd. All rights reserved.
+* See COPYING.txt for license details.
+**/
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+  <preference for="RTech\Zoho\Api\Data\ZohoInventoryInterface" type="RTech\Zoho\Model\ZohoInventory" />
+  <preference for="RTech\Zoho\Faq\Api\ZohoInventoryRepositoryInterface" type="RTech\Zoho\Model\ZohoInventoryRepository" />
+  <type name="Magento\Catalog\Api\ProductRepositoryInterface">
+    <plugin name="joinZohoIdToProductRepository" type="RTech\Zoho\Plugin\ProductZohoIdPlugin"/>
+  </type>
+</config>

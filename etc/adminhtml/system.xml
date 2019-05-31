@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!--
+/**
+* Copyright 2018 © Roma Technology Ltd. All rights reserved.
+* See COPYING.txt for license details.
+**/
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+  <system>
+    <tab id="zoho" translate="label" sortOrder="10">
+      <label>Zoho</label>
+    </tab>
+
+    <section id="zoho" translate="label" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
+      <class>separator-top</class>
+      <label>General</label>
+      <tab>zoho</tab>
+      <resource>RTech_Zoho::zoho_config</resource>
+
+      <group id="organisation" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+        <label>Organisation</label>
+        <field id="id" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Organisation ID</label>
+        </field>
+      </group>
+
+      <group id="books" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+        <label>Books</label>
+        <field id="api_key" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>API Key</label>
+        </field>
+        <field id="url" translate="label" type="text" sortOrder="2" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Endpoint</label>
+          <comment>API endpoint URL</comment>
+        </field>
+      </group>
+
+      <group id="inventory" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+        <label>Inventory</label>
+        <field id="api_key" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>API Key</label>
+        </field>
+        <field id="url" translate="label" type="text" sortOrder="2" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Endpoint</label>
+          <comment>API endpoint URL</comment>
+        </field>
+      </group>
+
+    </section>
+
+  </system>
+</config>
