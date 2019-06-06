@@ -26,7 +26,7 @@ class ZohoInventory extends AbstractModel implements IdentityInterface, ZohoInve
   * @return string[]
   */
   public function getIdentities() {
-    return [self::CACHE_TAG . '_' . $this->getProductId()];
+    return [self::CACHE_TAG . '_' . $this->getId()];
   }
 
   /**
