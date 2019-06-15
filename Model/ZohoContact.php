@@ -42,6 +42,8 @@ class ZohoContact implements ZohoContactInterface {
     'SI',
     'SK'
   ];
+  protected $_configData;
+  protected $_storeId;
   protected $_zohoCustomerRepository;
   protected $_zohoCustomerFactory;
   protected $_countryFactory;
@@ -59,6 +61,8 @@ class ZohoContact implements ZohoContactInterface {
     \Magento\Framework\Message\ManagerInterface $messageManager
   ) {
     $this->_zohoClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
+    $this->_configData = $configData;
+    $this->_storeId = $storeManager->getStore()->getId();
     $this->_zohoCustomerRepository = $zohoCustomerRepository;
     $this->_zohoCustomerFactory = $zohoCustomerFactory;
     $this->_countryFactory = $countryFactory;
@@ -69,74 +73,75 @@ class ZohoContact implements ZohoContactInterface {
   /**
   * @inheritdoc
   */
-  public function createContact($customer) {
+  public function getContactId($order) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('verifyContact');
+    $this->_logger->info('Customer id: ' . $order->getCustomerId());
+
     try {
-      $zohoCustomer = $this->_zohoCustomerRepository->getId($customer->getId());
+      $zohoCustomer = $this->_zohoCustomerRepository->getId($order->getCustomerId());
       $contact = $this->_zohoClient->getContact($zohoCustomer->getZohoId());
+
     } catch (NoSuchEntityException $e) {
       // Try to lookup the contact
-      $contact = $this->_zohoClient->lookupContact(trim($customer->getFirstname() . ' ' . $customer->getLastname()));
-      if ($contact && $contact['email'] == $customer->getEmail()) {
-          $this->_messageManager->addNotice('Zoho Books contact "' . $contact['contact_name'] . '" has been linked');
-      } else {
-        // Create a new contact - set VAT treatment as default in 'uk'.
-        // This may be changed based on address updates
-        $contact = $this->_zohoClient->addContact([
-          'contact_name' => trim($customer->getFirstname() . ' ' . $customer->getLastname()),
-          'contact_type' => 'customer',
-          'vat_treatment' => 'uk',
-          'contact_persons' => [[
-            'salutation' => $customer->getPrefix()?:'',
-            'first_name' => $customer->getFirstname(),
-            'last_name' => $customer->getLastname(),
-            'email' => $customer->getEmail(),
-            'is_primary_contact' => 'true'
-          ]]
-        ]);
+      $this->_logger->info('lookup customer');
+      $contact = $this->_zohoClient->lookupContact($this->getContactName($order), $order->getCustomerEmail());
+      if (!$contact) {
+        // Create a new contact
+        $this->_logger->info('create customer');
+        $contact = $this->_zohoClient->addContact($this->getContactArray($order));
       }
-
-      $zohoCustomer = $this->_zohoCustomerFactory->create();
-      $zohoCustomer->setData([
-        'customer_id' => $customer->getId(),
-        'zoho_id' => $contact['contact_id']
-      ]);
-
-      $this->_zohoCustomerRepository->save($zohoCustomer);
+      if ($order->getCustomerId()) {
+        // Not a guest so create entry in zoho_customer table
+        $zohoCustomer = $this->_zohoCustomerFactory->create();
+        $zohoCustomer->setData([
+          'customer_id' => $order->getCustomerId(),
+          'zoho_id' => $contact['contact_id']
+        ]);
+        $this->_logger->info($zohoCustomer->getData());
+        try {
+          $this->_zohoCustomerRepository->save($zohoCustomer);
+          $this->_logger->info('saved');
+        } catch (\Exception $e) {
+          $this->_logger->info($e->getMessage());
+        }
+      }
     }
+    $this->_logger->info($contact);
     return $contact;
   }
 
   /**
   * @inheritdoc
   */
-  public function updateContact($customer, $contact) {
-    $contact['contact_name'] = $customer->getFirstname() . ' ' . $customer->getLastname();
+  public function updateContact($contact, $order) {
+    $contact['contact_name'] = $this->getContactName($order);
     unset($contact['tax_treatment']);
     unset($contact['contact_category']);
+
     try {
       $primaryIndex = array_search(true, array_column($contact['contact_persons'], 'is_primary_contact'));
-      $contact['contact_persons'][$primaryIndex]['salutation'] = $customer->getPrefix();
-      $contact['contact_persons'][$primaryIndex]['first_name'] = $customer->getFirstname();
-      $contact['contact_persons'][$primaryIndex]['last_name'] = $customer->getLastname();
-      $contact['contact_persons'][$primaryIndex]['email'] = $customer->getEmail();
+      $contact['contact_persons'][$primaryIndex]['salutation'] = $order->getCustomerPrefix();
+      $contact['contact_persons'][$primaryIndex]['first_name'] = $order->getCustomerFirstname();
+      $contact['contact_persons'][$primaryIndex]['last_name'] = $order->getCustomerLastname();
+      $contact['contact_persons'][$primaryIndex]['email'] = $order->getCustomerEmail();
     } catch (\Exception $ex) {
       // No person updates as no primary person
     }
-    foreach ($customer->getAddresses() as $address) {
-      $contactAddress = $this->address($address);
-      if ($address->isDefaultBilling()) {
-        $contact['billing_address'] = $contactAddress;
-        $contact['billing_address'] = $contactAddress;
-        $vat = $this->vatBillingTreatment($address);
-        $contact['company_name'] = isset($vat['company_name'])?$vat['company_name']:'';
-        $contact['vat_reg_no'] = isset($vat['vat_reg_no'])?$vat['vat_reg_no']:'';
-        $contact['vat_treatment'] = isset($vat['vat_treatment'])?$vat['vat_treatment']:'';
-        $contact['country_code'] = isset($vat['country_code'])?$vat['country_code']:'';
-      }
-      if ($address->isDefaultShipping()) {
-        $contact['shipping_address'] = $contactAddress;
-      }
-    }
+
+    $billingAddress = $order->getBillingAddress();
+    $shippingAddress = $order->getShippingAddress();
+    $contact['billing_address'] = $billingAddress ? $this->getAddressArray($billingAddress) : '';
+    $contact['shipping_address'] = $shippingAddress ? $this->getAddressArray($shippingAddress) : '';
+
+    $vat = $this->vatBillingTreatment($order);
+    $contact['company_name'] = isset($vat['company_name']) ? $vat['company_name'] : '';
+    $contact['vat_reg_no'] = isset($vat['vat_reg_no']) ? $vat['vat_reg_no'] : '';
+    $contact['vat_treatment'] = isset($vat['vat_treatment']) ? $vat['vat_treatment'] : '';
+    $contact['country_code'] = isset($vat['country_code']) ? $vat['country_code'] : '';
+
     return $this->_zohoClient->updateContact($contact);
   }
 
@@ -148,7 +153,7 @@ class ZohoContact implements ZohoContactInterface {
     unset($contact['tax_treatment']);
     unset($contact['contact_category']);
     $address = $address->getDataModel();
-    $contactAddress = $this->address($address);
+    $contactAddress = $this->getAddressArray($address);
 
     if ($address->isDefaultBilling()) {
       $contact['billing_address'] = $contactAddress;
@@ -165,12 +170,57 @@ class ZohoContact implements ZohoContactInterface {
     return $this->_zohoClient->updateContact($contact);
   }
 
-  private function address($address) {
-    $attention = $address->getPrefix() ? $address->getPrefix() . ' ' : '';
-    $attention .= $address->getFirstname() ? $address->getFirstname() . ' ': '';
-    $attention .= $address->getMiddlename() ? $address->getMiddlename() . ' ': '';
-    $attention .= $address->getLastname() ? $address->getLastname() . ' ': '';
-    $attention .= $address->getSuffix() ? $address->getSuffix() . ' ': '';
+  private function getContactArray($order) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('getContactArray');
+
+    $billingAddress = $order->getBillingAddress();
+    $shippingAddress = $order->getShippingAddress();
+    $vat = $this->vatBillingTreatment($order);
+    $this->_logger->info($vat);
+
+    $firstName = $order->getCustomerFirstname();
+    if (!$firstName && !$order->getCustomerLastname()) {
+      $firstName = __('Guest');
+    }
+    return array_merge([
+      'contact_name' => $this->getContactName($order),
+      'contact_type' => 'customer',
+      'contact_persons' => [[
+        'salutation' => $order->getCustomerPrefix()?:'',
+        'first_name' => $firstName,
+        'last_name' => $order->getCustomerLastname()?:'',
+        'email' => $order->getCustomerEmail()?:'',
+        'is_primary_contact' => 'true'
+      ]],
+      'billing_address' => $billingAddress ? $this->getAddressArray($billingAddress) : '',
+      'shipping_address' => $shippingAddress ? $this->getAddressArray($shippingAddress) : ''
+    ], $vat);
+  }
+
+  private function getContactName($order) {
+    if ($order->getCustomerFirstname()) {
+      $customerName = $order->getCustomerFirstname() . ' ' . $order->getCustomerLastname();
+    } else {
+      $billingAddress = $order->getBillingAddress();
+      if ($billingAddress) {
+        $customerName = $billingAddress->getFirstname() . ' ' . $billingAddress->getLastname();
+      } else {
+        $customerName = (string)__('Guest');
+      }
+    }
+    return substr(trim($customerName), 0, 200);
+  }
+
+  private function getAddressArray($address) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('getAddressArray');
+
+    $this->_logger->info($address->getName());
 
     if (count($address->getStreet()) >= 2) {
       $street2 = $address->getStreet()[1]?:'';
@@ -178,16 +228,23 @@ class ZohoContact implements ZohoContactInterface {
         $street2 .= strlen($street2) > 0 && strlen($address->getStreet()[2]) > 0 ? ', ' . $address->getStreet()[2] : $address->getStreet()[2];
       }
     }
+    $this->_logger->info($street2);
 
     $country = $this->_countryFactory->create()->loadByCode($address->getCountryId());
+    $this->_logger->info($country->getName());
 
-    $region = $address->getRegion()->getRegion();
+    $region = $address->getRegion();
+    if (is_object($region)) {
+      $region = $region->getRegion();
+    }
+
     if ($address->getRegionId()) {
       $region = $this->_regionFactory->create()->load($address->getRegionId())->getName();
     }
+    $this->_logger->info($region);
 
     $contactAddress = [
-      'attention' => $attention,
+      'attention' => $address->getName(),
       'address' => $address->getStreet()[0]?:'',
       'street2' => $street2,
       'city' => $address->getCity()?:'',
@@ -197,24 +254,32 @@ class ZohoContact implements ZohoContactInterface {
       'phone' => $address->getTelephone()?:'',
       'fax' => $address->getFax()?:''
     ];
+    $this->_logger->info($contactAddress);
     return $contactAddress;
   }
 
-  private function vatBillingTreatment($address) {
-    $vat = ['company_name' => $address->getCompany()];
+  private function vatBillingTreatment($order) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
 
-    if (in_array($address->getCountryId(), self::EU_COUNTRIES)) {
-      $vat['vat_reg_no'] = $address->getVatId();
-      if ($address->getCountryId() == 'GB') {
-        $vat['vat_treatment'] = 'uk';
+    $vat = [];
+    $address = $order->getBillingAddress();
+
+    if ($address) {
+      $vat['company_name'] = $address->getCompany();
+      if (in_array($address->getCountryId(), self::EU_COUNTRIES)) {
+        $vat['vat_reg_no'] = preg_replace('/\s+/', '', $address->getVatId());
+        if ($address->getCountryId() == 'GB') {
+          $vat['vat_treatment'] = 'uk';
+        } else {
+          $vat['vat_treatment'] = ($order->getCustomerGroupId() == $this->_configData->getMagentoEuVatGroupId($this->_storeId)) ? 'eu_vat_registered' : 'eu_vat_not_registered';
+        }
+        $vat['country_code'] = $vat['vat_reg_no'] ? $address->getCountryId() : '';
       } else {
-        $vat['vat_treatment'] = $vat['vat_reg_no'] ? 'eu_vat_registered': 'eu_vat_not_registered';
+        $vat['vat_treatment'] = 'non_eu';
       }
-      $vat['country_code'] = $vat['vat_reg_no']? $address->getCountryId() : '';
-    } else {
-      $vat['vat_treatment'] = 'non_eu';
     }
-
     return $vat;
   }
 
@@ -225,12 +290,13 @@ class ZohoContact implements ZohoContactInterface {
     try {
       $zohoCustomer = $this->_zohoCustomerRepository->getId($customer->getId());
       $this->_zohoClient->deleteContact($zohoCustomer->getZohoId());
+      $this->_messageManager->addNotice('Zoho customer "' . $customer->getFirstname() . ' ' . $customer->getLastname() . '" deleted');
     } catch (ZohoOperationException $e) {
       // Customer has transations so mark as inactive
       $this->_zohoClient->contactSetInactive($zohoCustomer->getZohoId());
       $this->_messageManager->addNotice('Zoho customer "' . $customer->getFirstname() . ' ' . $customer->getLastname() . '" set to inactive');
     } catch (ZohoItemNotFoundException $e) {
-      $this->_messageManager->addNotice('Zoho customer for "' . $customer->getFirstname() . ' ' . $customer->getLastname() . '" not found');
+      // Do Nothing
     } catch (NoSuchEntityException $e) {
       // Do nothing
     }

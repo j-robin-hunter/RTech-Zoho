@@ -6,6 +6,7 @@
  **/
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+  <!--
   <event name="customer_register_success">
     <observer name="zoho_customer_register_success" instance="RTech\Zoho\Observer\CustomerRegisterSuccess"/>
   </event>
@@ -14,5 +15,15 @@
   </event>
   <event name="customer_address_save_after">
     <observer name="zoho_customer_address_save_after" instance="RTech\Zoho\Observer\CustomerAddressSaveAfter"/>
+  </event>
+  -->
+  <event name="sales_order_save_after">
+    <observer name="zoho_sales_order_save_after" instance="RTech\Zoho\Observer\SalesOrderSaveAfter" />
+  </event>
+  <event name="payment_method_is_active">
+    <observer name="zoho_payment_method_is_active" instance="RTech\Zoho\Observer\PaymentMethodIsActive"/>
+  </event>
+  <event name="sales_order_invoice_pay">
+    <observer name="zoho_sales_order_invoice_pay" instance="RTech\Zoho\Observer\SalesOrderInvoicePay"/>
   </event>
 </config>

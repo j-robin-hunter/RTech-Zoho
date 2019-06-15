@@ -12,6 +12,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\CouldNotDeleteException;
 
 class ZohoInventoryRepository implements ZohoInventoryRepositoryInterface {
+
   protected $zohoInventoryResource;
   protected $zohoInventoryFactory;
 
@@ -28,7 +29,7 @@ class ZohoInventoryRepository implements ZohoInventoryRepositoryInterface {
   */
   public function getId($productId) {
     $zohoInventory = $this->zohoInventoryFactory->create();
-    $response = $this->zohoInventoryResource->load($zohoInventory, $productId);
+    $this->zohoInventoryResource->load($zohoInventory, $productId);
     if (!$zohoInventory->getId()) {
       throw new NoSuchEntityException(__('No Zoho Inventory entry for product with id "%1" exists.', $productId));
     }

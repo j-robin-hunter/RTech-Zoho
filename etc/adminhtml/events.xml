@@ -15,10 +15,15 @@
   <event name="catalog_product_attribute_update_before">
     <observer name="zoho_catalog_product_attribute_update_before" instance="RTech\Zoho\Observer\CatalogProductAttributeUpdateBefore"/>
   </event>
+  <!--
   <event name="adminhtml_customer_save_after">
     <observer name="zoho_adminhtml_customer_save_after" instance="RTech\Zoho\Observer\AdminhtmlCustomerSaveAfter"/>
   </event>
+  -->
   <event name="customer_delete_before">
     <observer name="zoho_customer_delete_before" instance="RTech\Zoho\Observer\CustomerDeleteBefore"/>
+  </event>
+  <event name="sales_order_shipment_save_before">
+    <observer name="zoho_sales_order_shipment_save_before" instance="RTech\Zoho\Observer\SalesOrderShipmentSaveBefore"/>
   </event>
 </config>

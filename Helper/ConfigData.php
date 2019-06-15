@@ -7,7 +7,6 @@
 namespace RTech\Zoho\Helper;
 
 use Magento\Framework\App\Helper\AbstractHelper;
-use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 
 class ConfigData extends AbstractHelper
@@ -15,13 +14,28 @@ class ConfigData extends AbstractHelper
   const ZOHO_ORGANISATION_ID = 'zoho/organisation/id';
   const ZOHO_BOOKS_KEY  = 'zoho/books/api_key';
   const ZOHO_BOOKS_ENDPOINT = 'zoho/books/url';
+  const MAGENTO_EU_VAT_GROUP = 'zoho/books/eu_vat_group';
+  const ZOHO_BOOKS_QUOTE_VALIDITY = 'zoho/books/quote_validity';
   const ZOHO_INVENTORY_KEY  = 'zoho/inventory/api_key';
   const ZOHO_INVENTORY_ENDPOINT = 'zoho/inventory/url';
+  const ZOHO_SHIPPING_SKU = 'zoho/inventory/shipping_sku';
+
+  protected $scopeConfig;
+  protected $groupRepository;
+  protected $searchCriteriaBuilder;
+  protected $filterBuilder;
+  protected $customerGroups;
 
   public function __construct(
-    ScopeConfigInterface $scopeConfig
+    \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
+    \Magento\Customer\Api\GroupRepositoryInterface $groupRepository,
+    \Magento\Framework\Api\SearchCriteriaBuilder $searchCriteriaBuilder,
+    \Magento\Framework\Api\FilterBuilder $filterBuilder
   ) {
     $this->scopeConfig = $scopeConfig;
+    $this->groupRepository = $groupRepository;
+    $this->searchCriteriaBuilder = $searchCriteriaBuilder;
+    $this->filterBuilder = $filterBuilder;
   }
 
   public function getZohoOrganistionId($storeId) {
@@ -48,6 +62,40 @@ class ConfigData extends AbstractHelper
     );
   }
 
+  public function getMagentoEuVatGroupId($storeId) {$groupName = (string)$this->scopeConfig->getValue(
+      self::MAGENTO_EU_VAT_GROUP,
+      ScopeInterface::SCOPE_STORE,
+      $storeId
+    );
+
+    $generalFilter[] = $this->filterBuilder
+      ->setField('customer_group_code')
+      ->setConditionType('eq')
+      ->setValue($groupName)
+      ->create();
+
+    $searchCriteria = $this->searchCriteriaBuilder
+      ->addFilters($generalFilter)
+      ->create();
+
+    if ($this->customerGroups === null) {
+      $this->customerGroups = [];
+      foreach ($this->groupRepository->getList($searchCriteria)->getItems() as $item) {
+        $this->customerGroups[] = $item->getId();
+      }
+    }
+
+    return count($this->customerGroups) > 0 ? $this->customerGroups[0] : null;
+  }
+
+  public function getZohoQuoteValidity($storeId) {
+    return (int)$this->scopeConfig->getValue(
+      self::ZOHO_BOOKS_QUOTE_VALIDITY,
+      ScopeInterface::SCOPE_STORE,
+      $storeId
+    );
+  }
+  
   public function getZohoInventoryKey($storeId) {
     return (string)$this->scopeConfig->getValue(
       self::ZOHO_INVENTORY_KEY,
@@ -59,6 +107,14 @@ class ConfigData extends AbstractHelper
   public function getZohoInventoryEndpoint($storeId) {
     return (string)$this->scopeConfig->getValue(
       self::ZOHO_INVENTORY_ENDPOINT,
+      ScopeInterface::SCOPE_STORE,
+      $storeId
+    );
+  }
+
+  public function getZohoShippingSku($storeId) {
+    return (string)$this->scopeConfig->getValue(
+      self::ZOHO_SHIPPING_SKU,
       ScopeInterface::SCOPE_STORE,
       $storeId
     );

@@ -10,7 +10,7 @@ class ZohoItemNotFoundException extends \Exception {
   public static function create($responseBody) {
     $response = json_decode($responseBody, true);
     if ($response && isset($response['message'])) {
-      $message = 'Zoho Inventory ' . $response['message'];
+      $message = $response['message'];
     } else {
       $message = sprintf('API operation failed. Response: "%s"', $responseBody);
     }

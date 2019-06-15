@@ -33,6 +33,14 @@
           <label>Endpoint</label>
           <comment>API endpoint URL</comment>
         </field>
+        <field id="eu_vat_group" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Magento EU VAT Registered Group</label>
+          <comment>Name of Magento customer group for EU VAT registered customners</comment>
+        </field>
+        <field id="quote_validity" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Quote Validity </label>
+          <comment>Number of days for quotes to be valid for</comment>
+        </field>
       </group>
 
       <group id="inventory" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
@@ -43,6 +51,10 @@
         <field id="url" translate="label" type="text" sortOrder="2" showInDefault="1" showInWebsite="0" showInStore="0">
           <label>Endpoint</label>
           <comment>API endpoint URL</comment>
+        </field>
+        <field id="shipping_sku" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Shipping SKU</label>
+          <comment>The Zoho Inventory SKU for shipping</comment>
         </field>
       </group>
 

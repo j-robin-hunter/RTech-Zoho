@@ -10,85 +10,20 @@ use RTech\Zoho\Webservice\Exception\ZohoOperationException;
 use RTech\Zoho\Webservice\Exception\ZohoItemNotFoundException;
 use RTech\Zoho\Webservice\Exception\ZohoItemExistsException;
 use RTech\Zoho\Api\Data\ZohoInventoryClientInterface;
+use RTech\Zoho\Webservice\Client\AbstractZohoClient;
 
-class ZohoInventoryClient implements ZohoInventoryClientInterface {
-  const ITEMS_API = 'items';
-  const ITEM_GROUPS_API = 'itemgroups';
-  const ITEM_UNGROUP_API = 'items/ungroup';
-  const TAXES_API = 'settings/taxes';
-
-  const GET = \Zend\Http\Request::METHOD_GET;
-  const POST = \Zend\Http\Request::METHOD_POST;
-  const PUT = \Zend\Http\Request::METHOD_PUT;
-  const DELETE = \Zend\Http\Request::METHOD_DELETE;
-
-  const NO_ZOHO_INVENTORY_CODE = 2006;
-  const EXISTS_ZOHO_INVENTORY_CODE = 1001;
-
-  protected $_configData;
-  protected $_zendClient;
-  protected $_storeId;
+class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryClientInterface {
 
   public function __construct(
     \RTech\Zoho\Helper\ConfigData $configData,
     \Zend\Http\Client $zendClient,
     \Magento\Store\Model\StoreManagerInterface $storeManager
   ) {
-    $this->_configData = $configData;
-    $this->_zendClient = $zendClient;
-    $this->_storeId = $storeManager->getStore()->getId();
-  }
-
-  protected function callZoho($api, $method, $parameters, $imageFile=null) {
-    $this->_zendClient->reset();
-    $this->_zendClient->setUri($this->_configData->getZohoInventoryEndpoint($this->_storeId) . '/' . $api);
-    $this->_zendClient->setMethod($method);
-
-    $parameters['authtoken'] = $this->_configData->getZohoInventoryKey($this->_storeId);
-    $parameters['organization_id'] = $this->_configData->getZohoOrganistionId($this->_storeId);
-
-    if ($method === self::GET || $method === self::DELETE) {
-      $this->_zendClient->setParameterGet($parameters);
-    } else {
-      $this->_zendClient->setParameterPost($parameters);
-      if ($imageFile) {
-        $this->_zendClient->setEncType('image/' . pathinfo($imageFile, PATHINFO_EXTENSION));
-        $this->_zendClient->setFileUpload($imageFile,  'image');
-      }
-    }
-
-    try {
-      $this->_zendClient->send();
-      $response = $this->_zendClient->getResponse();
-    }
-    catch (\Zend\Http\Exception\RuntimeException $runtimeException) {
-      throw ZohoCommunicationException::runtime($runtimeException->getMessage());
-    }
-    $errorCodes = [
-      \Zend\Http\Response::STATUS_CODE_400,
-      \Zend\Http\Response::STATUS_CODE_401,
-      \Zend\Http\Response::STATUS_CODE_403,
-      \Zend\Http\Response::STATUS_CODE_404,
-      \Zend\Http\Response::STATUS_CODE_405,
-      \Zend\Http\Response::STATUS_CODE_406,
-      \Zend\Http\Response::STATUS_CODE_429,
-      \Zend\Http\Response::STATUS_CODE_500,
-    ];
-    if (in_array($response->getStatusCode(), $errorCodes)) {
-      $zohoCode = json_decode($response->getBody(), true)['code'];
-      if ($zohoCode == self::NO_ZOHO_INVENTORY_CODE || $response->getStatusCode() == \Zend\Http\Response::STATUS_CODE_404) {
-        throw ZohoItemNotFoundException::create($response->getBody());
-      }
-      if ($zohoCode == self::EXISTS_ZOHO_INVENTORY_CODE) {
-        throw ZohoItemExistsException::create($response->getBody());
-      }
-      throw ZohoOperationException::create($response->getBody());
-    }
-    // unknown error response codes
-    if (!$response->isSuccess()) {
-      throw new ZohoCommunicationException($response->getBody());
-    }
-    return json_decode($response->getBody(), true);
+    $storeId = $storeManager->getStore()->getId();
+    $endpoint = $configData->getZohoInventoryEndpoint($storeId);
+    $key = $configData->getZohoInventoryKey($storeId);
+    $organisationId = $configData->getZohoOrganistionId($storeId);
+    parent::__construct($zendClient, $endpoint, $key, $organisationId);
   }
 
   /**
@@ -115,15 +50,39 @@ class ZohoInventoryClient implements ZohoInventoryClientInterface {
   /**
   * @inheritdoc
   */
-  public function getTaxes() {
-    return $this->callZoho(self::TAXES_API, self::GET, [])['taxes'];
+  public function packageAdd($salesOrderId, $package) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('packageAdd');
+
+    try {
+      return $this->callZoho(self::PACKAGES_API, self::POST, ['salesorder_id' => $salesOrderId, 'JSONString' => json_encode($package, true)])['package'];
+    } catch (\Exception $e) {
+      $this->_logger->info($e->getMessage());
+      throw new $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
-  public function getItem($itemId) {
-    return $this->callZoho(self::ITEMS_API . '/' . $itemId, self::GET, [])['item'];
+  public function shipmentAdd($package, $shipment) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('shipmentAdd');
+
+    try {
+      return $this->callZoho(self::SHIPMENTS_API, self::POST, [
+        'salesorder_id' => $package['salesorder_id'],
+        'package_ids' => $package['package_id'],
+        'JSONString' => json_encode($shipment, true)
+      ])['shipment_order'];
+    } catch (\Exception $e) {
+      $this->_logger->info($e->getMessage());
+      throw new $e;
+    }
   }
 
   /**
@@ -147,6 +106,13 @@ class ZohoInventoryClient implements ZohoInventoryClientInterface {
   public function getItemGroupByName($groupName) {
     $response = $this->callZoho(self::ITEM_GROUPS_API, self::GET, ['group_name' => $groupName]);
     return count($response['itemgroups']) == 1 ? $response['itemgroups'][0] : null;
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function getSalesOrder($salesOrderId) {
+    return $this->callZoho(self::SALESORDERS_API . '/' . $salesOrderId, self::GET, [])['salesorder'];
   }
 
   /**

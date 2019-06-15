@@ -18,6 +18,15 @@ class CustomerAddressSaveAfter implements ObserverInterface {
   }
 
   public function execute(\Magento\Framework\Event\Observer $observer) {
-    $this->_zohoContact->updateAddress($observer->getCustomerAddress());
+
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('CustomerAddressSaveAfter');
+    try {
+      $this->_zohoContact->updateAddress($observer->getCustomerAddress());
+    } catch (\Exception $e) {
+      $this->_logger->info($e->getMessage());
+    }
   }
 }

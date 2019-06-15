@@ -33,19 +33,22 @@ interface ZohoInventoryClientInterface {
   public function imageAdd($itemId, $imageFile);
 
   /**
-  * Get all defined Zoho Inventory taxes
+  * Add a package to Zoho Inventory
   *
+  * @param string $salesOrderId
+  * @param array $package
   * @return array
   */
-  public function getTaxes();
+  public function packageAdd($salesOrderId, $package);
 
-  /**
-  * Get a Zoho Inventory item
+    /**
+  * Add a shipment to Zoho Inventory
   *
-  * @param int $itemId
+  * @param array $package
+  * @param array $shipment
   * @return array
   */
-  public function getItem($itemId);
+  public function shipmentAdd($package, $shipment);
 
   /**
   * Get a Zoho Inventory item by name
@@ -70,6 +73,14 @@ interface ZohoInventoryClientInterface {
   * @return array
   */
   public function getItemGroupByName($groupName);
+
+  /**
+  * Get a Zoho Inventory sales order
+  *
+  * @param string $salesOrderId
+  * @return array
+  */
+  public function getSalesOrder($salesOrderId);
 
   /**
   * Update a Zoho Inventory item

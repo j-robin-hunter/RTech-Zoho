@@ -10,76 +10,27 @@ use RTech\Zoho\Webservice\Exception\ZohoOperationException;
 use RTech\Zoho\Webservice\Exception\ZohoItemNotFoundException;
 use RTech\Zoho\Webservice\Exception\ZohoItemExistsException;
 use RTech\Zoho\Api\Data\ZohoBooksClientInterface;
+use RTech\Zoho\Webservice\Client\AbstractZohoClient;
 
-class ZohoBooksClient implements ZohoBooksClientInterface {
-  const CONTACTS_API = 'contacts';
-
-  const GET = \Zend\Http\Request::METHOD_GET;
-  const POST = \Zend\Http\Request::METHOD_POST;
-  const PUT = \Zend\Http\Request::METHOD_PUT;
-  const DELETE = \Zend\Http\Request::METHOD_DELETE;
-
-
-  protected $_configData;
-  protected $_zendClient;
-  protected $_storeId;
+class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInterface {
 
   public function __construct(
     \RTech\Zoho\Helper\ConfigData $configData,
     \Zend\Http\Client $zendClient,
     \Magento\Store\Model\StoreManagerInterface $storeManager
   ) {
-    $this->_configData = $configData;
-    $this->_zendClient = $zendClient;
-    $this->_storeId = $storeManager->getStore()->getId();
-  }
-
-  protected function callZoho($api, $method, $parameters) {
-    $this->_zendClient->reset();
-    $this->_zendClient->setUri($this->_configData->getZohoBooksEndpoint($this->_storeId) . '/' . $api);
-    $this->_zendClient->setMethod($method);
-
-    $parameters['authtoken'] = $this->_configData->getZohoBooksKey($this->_storeId);
-    $parameters['organization_id'] = $this->_configData->getZohoOrganistionId($this->_storeId);
-
-    if ($method === self::GET || $method === self::DELETE) {
-      $this->_zendClient->setParameterGet($parameters);
-    } else {
-      $this->_zendClient->setParameterPost($parameters);
-    }
-
-    try {
-      $this->_zendClient->send();
-      $response = $this->_zendClient->getResponse();
-    }
-    catch (\Zend\Http\Exception\RuntimeException $runtimeException) {
-      throw ZohoCommunicationException::runtime($runtimeException->getMessage());
-    }
-    $errorCodes = [
-      \Zend\Http\Response::STATUS_CODE_400,
-      \Zend\Http\Response::STATUS_CODE_401,
-      \Zend\Http\Response::STATUS_CODE_403,
-      \Zend\Http\Response::STATUS_CODE_404,
-      \Zend\Http\Response::STATUS_CODE_405,
-      \Zend\Http\Response::STATUS_CODE_406,
-      \Zend\Http\Response::STATUS_CODE_429,
-      \Zend\Http\Response::STATUS_CODE_500,
-    ];
-    if (in_array($response->getStatusCode(), $errorCodes)) {
-      throw ZohoOperationException::create($response->getBody());
-    }
-    // unknown error response codes
-    if (!$response->isSuccess()) {
-      throw new ZohoCommunicationException($response->getBody());
-    }
-    return json_decode($response->getBody(), true);
+    $storeId = $storeManager->getStore()->getId();
+    $endpoint = $configData->getZohoBooksEndpoint($storeId);
+    $key = $configData->getZohoBooksKey($storeId);
+    $organisationId = $configData->getZohoOrganistionId($storeId);
+    parent::__construct($zendClient, $endpoint, $key, $organisationId);
   }
 
   /**
   * @inheritdoc
   */
-  public function lookupContact($contactName) {
-    $response = $this->callZoho(self::CONTACTS_API, self::GET, ['contact_name' => $contactName]);
+  public function lookupContact($contactName, $email) {
+    $response = $this->callZoho(self::CONTACTS_API, self::GET, ['contact_name' => $contactName, 'email' => $email]);
     return count($response['contacts']) == 1 ? $response['contacts'][0] : null;
   }
 
@@ -116,5 +67,98 @@ class ZohoBooksClient implements ZohoBooksClientInterface {
   */
   public function contactSetInactive($contactId) {
     $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/inactive', self::POST, []);
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function addEstimate($estimate) {
+    return $this->callZoho(self::ESTIMATES_API, self::POST, ['JSONString' => json_encode($estimate, true)])['estimate'];
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function markEstimateSent($estimateId) {
+    $this->callZoho(self::ESTIMATES_API .'/' . $estimateId . '/status/sent', self::POST, []);
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function markEstimateAccepted($estimateId) {
+    $this->callZoho(self::ESTIMATES_API .'/' . $estimateId . '/status/accepted', self::POST, []);
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function deleteEstimate($estimateId) {
+    if ($estimateId) {
+      $this->callZoho(self::ESTIMATES_API .'/' . $estimateId, self::DELETE, []);
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function addSalesOrder($salesOrder) {
+    return $this->callZoho(self::SALESORDERS_API, self::POST, ['JSONString' => json_encode($salesOrder, true)])['salesorder'];
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function markSalesOrderOpen($salesOrderId) {
+    $this->callZoho(self::SALESORDERS_API .'/' . $salesOrderId . '/status/open', self::POST, []);
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function convertSalesOrderToInvoice($salesOrderId) {
+    return $this->callZoho(self::INVOICES_API .'/fromsalesorder' , self::POST, ['salesorder_id' => $salesOrderId])['invoice'];
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function deleteSalesOrder($salesOrderId) {
+    if ($salesOrderId) {
+      $this->callZoho(self::SALESORDERS_API .'/' . $salesOrderId, self::DELETE, []);
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function updateInvoice($invoiceId, $invoice) {
+        $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('updateInvoice');
+    try {
+    return $this->callZoho(self::INVOICES_API . '/' . $invoiceId, self::PUT, ['JSONString' => json_encode($invoice, true)])['invoice'];
+    } catch (\Exception $e) {
+      $this->_logger->info($e->getMessage());
+      throw new $e;
+    }
+  }
+
+
+  /**
+  * @inheritdoc
+  */
+  public function markInvoiceSent($invoiceId) {
+    $this->callZoho(self::INVOICES_API .'/' . $invoiceId . '/status/sent', self::POST, []);
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function deleteInvoice($invoiceId) {
+    if ($invoiceId) {
+      $this->callZoho(self::INVOICES_API .'/' . $invoiceId, self::DELETE, []);
+    }
   }
 }

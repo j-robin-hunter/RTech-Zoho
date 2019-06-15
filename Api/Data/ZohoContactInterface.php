@@ -8,34 +8,26 @@ namespace RTech\Zoho\Api\Data;
 interface ZohoContactInterface {
 
   /**
-  * Add Zoho contact
+  * Get/Create Zoho contact from order
   *
-  * @param array $customer
-  * @return array
+  * @param array $order
+  * @return string
   */
-  public function createContact($customer);
+  public function getContactId($order);
 
   /**
   * Update Zoho contact
   *
-  * @param array $customer
   * @param array $contact
+  * @param array $order
   * @return array
   */
-  public function updateContact($customer, $contact);
+  public function updateContact($contact, $order);
 
   /**
-  * Update Zoho contact address
+  * Delete customer's Zoho contact
   *
-  * @param array $address
-  * @return array
-  */
-  public function updateAddress($address);
-
-  /**
-  * Delete Zoho contact
-  *
-  * @param array $customer
+  * @param array $contact
   * @return array
   */
   public function deleteContact($customer);

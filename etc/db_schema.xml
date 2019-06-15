@@ -6,7 +6,7 @@
 -->
 <schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
   <table name="zoho_inventory" resource="default" engine="innodb" comment="Zoho Inventory Item Ids">
-  <column xsi:type="int" name="product_id" padding="10" unsigned="true" nullable="false" identity="false" comment="Magento Product ID"/>
+    <column xsi:type="int" name="product_id" padding="10" unsigned="true" nullable="false" identity="false" comment="Magento Product ID"/>
     <column xsi:type="varchar" name="product_name" nullable="false" length="256" comment="Product Name"/>
     <column xsi:type="varchar" name="zoho_id" nullable="false" length="32" comment="Zoho Identity Id"/>
     <column xsi:type="varchar" name="zoho_type" nullable="false" length="16" comment="Zoho Inventory Type"/>
@@ -17,14 +17,29 @@
                 table="zoho_inventory" column="product_id" referenceTable="catalog_product_entity"
                 referenceColumn="entity_id" onDelete="CASCADE"/>
   </table>
+
   <table name="zoho_customer" resource="default" engine="innodb" comment="Zoho Books Customer Ids">
-  <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" identity="false" comment="Magento Customer ID"/>
+    <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" identity="false" comment="Magento Customer ID"/>
     <column xsi:type="varchar" name="zoho_id" nullable="false" length="32" comment="Zoho Customer Id"/>
     <constraint xsi:type="primary" referenceId="PRIMARY">
       <column name="customer_id"/>
     </constraint>
     <constraint xsi:type="foreign" referenceId="ZOHO_BOOKS_CUSTOMER_ID_CUSTOMER_ENTITY_ENTITY_ID"
                 table="zoho_customer" column="customer_id" referenceTable="customer_entity"
+                referenceColumn="entity_id" onDelete="CASCADE"/>
+  </table>
+
+  <table name="zoho_sales_order_management" resource="default" engine="innodb" comment="Zoho Books Sales Order Management Ids">
+    <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false" identity="false" comment="Magento Sales Order ID"/>
+    <column xsi:type="varchar" name="zoho_id" nullable="false" length="32" comment="Zoho Customer Id"/>
+    <column xsi:type="varchar" name="estimate_id" nullable="false" length="32" comment="Zoho Estimate ID"/>
+    <column xsi:type="varchar" name="sales_order_id" nullable="false" length="32" comment="Zoho Sales Order ID"/>
+    <column xsi:type="varchar" name="invoice_id" nullable="false" length="32" comment="Zoho Invoice ID"/>
+    <constraint xsi:type="primary" referenceId="PRIMARY">
+      <column name="order_id"/>
+    </constraint>
+    <constraint xsi:type="foreign" referenceId="ZOHO_BOOKS_CUSTOMER_ID_SALES_ORDER_ENTITY_ID"
+                table="zoho_sales_order" column="order_id" referenceTable="sales_order"
                 referenceColumn="entity_id" onDelete="CASCADE"/>
   </table>
 </schema>
