@@ -49,11 +49,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   * @inheritdoc
   */
   public function createEstimate($order) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('createEstimate');
-
     $contact = $this->_zohoContact->getContactId($order);
     $contact = $this->_zohoContact->updateContact($contact, $order);
 
@@ -70,7 +65,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     }
 
     $estimate['line_items'] = $this->createLineitems($contact, $order);
-    $this->_logger->info($estimate);
 
     $zohoEstimate = $this->_zohoClient->addEstimate($estimate);
     $this->_zohoClient->markEstimateSent($zohoEstimate['estimate_id']);
@@ -96,11 +90,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   * @inheritdoc
   */
   public function createSalesOrder($zohoSalesOrderManagement, $order) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('createSalesOrder');
-
     $contact = $this->_zohoContact->getContactId($order);
 
     $salesOrder = [
@@ -115,7 +104,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $salesOrder['line_items'] = $this->createLineitems($contact, $order);
 
     $zohoSalesOrder = $this->_zohoClient->addSalesOrder($salesOrder);
-    $this->_logger->info($zohoSalesOrder);
 
     $zohoSalesOrderManagement->setSalesOrderId($zohoSalesOrder['salesorder_id']);
 
@@ -134,24 +122,16 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   * @inheritdoc
   */
   public function createInvoice($zohoSalesOrderManagement, $order) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('createInvoice');
-
     // Create invoice from sales order
     $zohoInvoice = $this->_zohoClient->convertSalesOrderToInvoice($zohoSalesOrderManagement->getSalesOrderId());
-    $this->_logger->info('converted');
 
     // Update invoice to set reference number and notes
     $comments = '';
     foreach($order->getInvoiceCollection() as $invoice) {
       foreach ($invoice->getComments() as $comment) {
-        $this->_logger->info($comment->getComment());
         $comments = strlen($comments) > 0 ? '\r\n\r\n' . $comment->getComment() : $comment->getComment();
       }
     }
-    $this->_logger->info('got comments');
 
     $invoice = [
       'customer_id' => $zohoSalesOrderManagement->getZohoId(),
@@ -159,9 +139,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'notes' => $comments
     ];
 
-    $this->_logger->info($invoice);
     $zohoInvoice = $this->_zohoClient->updateInvoice($zohoInvoice['invoice_id'], $invoice);
-    $this->_logger->info($zohoInvoice);
     $this->_zohoClient->markInvoiceSent($zohoInvoice['invoice_id']);
 
     $zohoSalesOrderManagement->setInvoiceId($zohoInvoice['invoice_id']);
@@ -178,11 +156,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   }
 
   private function createLineitems($contact, $order) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('createLineitems');
-
     $taxes = $this->_zohoClient->getTaxes();
     $zeroRate = $taxes[array_search(0, array_column($taxes, 'tax_percentage'))]['tax_id'];
     $euVat = $contact['vat_treatment'] == 'eu_vat_registered' ? true : false;

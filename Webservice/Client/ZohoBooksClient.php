@@ -133,14 +133,9 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   * @inheritdoc
   */
   public function updateInvoice($invoiceId, $invoice) {
-        $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('updateInvoice');
     try {
     return $this->callZoho(self::INVOICES_API . '/' . $invoiceId, self::PUT, ['JSONString' => json_encode($invoice, true)])['invoice'];
     } catch (\Exception $e) {
-      $this->_logger->info($e->getMessage());
       throw new $e;
     }
   }

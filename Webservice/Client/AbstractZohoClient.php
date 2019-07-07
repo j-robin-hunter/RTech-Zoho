@@ -48,11 +48,7 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
     $this->_organisationId = $organisationId;
   }
 
-  protected function callZoho($api, $method, $parameters) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-
+  protected function callZoho($api, $method, $parameters, $imageFile=null) {
     $this->_zendClient->reset();
     $this->_zendClient->setUri($this->_endpoint . '/' . $api);
     $this->_zendClient->setMethod($method);
@@ -64,6 +60,10 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
       $this->_zendClient->setParameterGet($parameters);
     } else {
       $this->_zendClient->setParameterPost($parameters);
+      if ($imageFile) {
+        $this->_zendClient->setEncType('image/' . pathinfo($imageFile, PATHINFO_EXTENSION));
+        $this->_zendClient->setFileUpload($imageFile,  'image');
+      }
     }
 
     try {
@@ -71,7 +71,6 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
       $response = $this->_zendClient->getResponse();
     }
     catch (\Zend\Http\Exception\RuntimeException $runtimeException) {
-      $this->_logger->info('runtime exception');
       throw ZohoCommunicationException::runtime($runtimeException->getMessage());
     }
     $errorCodes = [
@@ -96,7 +95,6 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
     }
     // unknown error response codes
     if (!$response->isSuccess()) {
-      $this->_logger->info('communication exception');
       throw new ZohoCommunicationException($response->getBody());
     }
     return json_decode($response->getBody(), true);

@@ -49,6 +49,7 @@ class ZohoContact implements ZohoContactInterface {
   protected $_countryFactory;
   protected $_regionFactory;
   protected $_messageManager;
+  protected $_logger;
 
   public function __construct(
     \RTech\Zoho\Helper\ConfigData $configData,
@@ -58,7 +59,8 @@ class ZohoContact implements ZohoContactInterface {
     \RTech\Zoho\Model\ZohoCustomerFactory $zohoCustomerFactory,
     \Magento\Directory\Model\CountryFactory $countryFactory,
     \Magento\Directory\Model\RegionFactory $regionFactory,
-    \Magento\Framework\Message\ManagerInterface $messageManager
+    \Magento\Framework\Message\ManagerInterface $messageManager,
+    \Psr\Log\LoggerInterface $logger
   ) {
     $this->_zohoClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
     $this->_configData = $configData;
@@ -68,17 +70,13 @@ class ZohoContact implements ZohoContactInterface {
     $this->_countryFactory = $countryFactory;
     $this->_regionFactory = $regionFactory;
     $this->_messageManager = $messageManager;
+    $this->_logger = $logger;
   }
 
   /**
   * @inheritdoc
   */
   public function getContactId($order) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('verifyContact');
-    $this->_logger->info('Customer id: ' . $order->getCustomerId());
 
     try {
       $zohoCustomer = $this->_zohoCustomerRepository->getId($order->getCustomerId());
@@ -86,11 +84,9 @@ class ZohoContact implements ZohoContactInterface {
 
     } catch (NoSuchEntityException $e) {
       // Try to lookup the contact
-      $this->_logger->info('lookup customer');
       $contact = $this->_zohoClient->lookupContact($this->getContactName($order), $order->getCustomerEmail());
       if (!$contact) {
         // Create a new contact
-        $this->_logger->info('create customer');
         $contact = $this->_zohoClient->addContact($this->getContactArray($order));
       }
       if ($order->getCustomerId()) {
@@ -100,16 +96,13 @@ class ZohoContact implements ZohoContactInterface {
           'customer_id' => $order->getCustomerId(),
           'zoho_id' => $contact['contact_id']
         ]);
-        $this->_logger->info($zohoCustomer->getData());
         try {
           $this->_zohoCustomerRepository->save($zohoCustomer);
-          $this->_logger->info('saved');
         } catch (\Exception $e) {
-          $this->_logger->info($e->getMessage());
+          $this->_logger->error(__('Error while saving Customer Repository: ' . $e->getMessage()));
         }
       }
     }
-    $this->_logger->info($contact);
     return $contact;
   }
 
@@ -171,15 +164,9 @@ class ZohoContact implements ZohoContactInterface {
   }
 
   private function getContactArray($order) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('getContactArray');
-
     $billingAddress = $order->getBillingAddress();
     $shippingAddress = $order->getShippingAddress();
     $vat = $this->vatBillingTreatment($order);
-    $this->_logger->info($vat);
 
     $firstName = $order->getCustomerFirstname();
     if (!$firstName && !$order->getCustomerLastname()) {
@@ -215,23 +202,14 @@ class ZohoContact implements ZohoContactInterface {
   }
 
   private function getAddressArray($address) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('getAddressArray');
-
-    $this->_logger->info($address->getName());
-
     if (count($address->getStreet()) >= 2) {
       $street2 = $address->getStreet()[1]?:'';
       if (count($address->getStreet()) >= 3) {
         $street2 .= strlen($street2) > 0 && strlen($address->getStreet()[2]) > 0 ? ', ' . $address->getStreet()[2] : $address->getStreet()[2];
       }
     }
-    $this->_logger->info($street2);
 
     $country = $this->_countryFactory->create()->loadByCode($address->getCountryId());
-    $this->_logger->info($country->getName());
 
     $region = $address->getRegion();
     if (is_object($region)) {
@@ -241,7 +219,6 @@ class ZohoContact implements ZohoContactInterface {
     if ($address->getRegionId()) {
       $region = $this->_regionFactory->create()->load($address->getRegionId())->getName();
     }
-    $this->_logger->info($region);
 
     $contactAddress = [
       'attention' => $address->getName(),
@@ -254,15 +231,10 @@ class ZohoContact implements ZohoContactInterface {
       'phone' => $address->getTelephone()?:'',
       'fax' => $address->getFax()?:''
     ];
-    $this->_logger->info($contactAddress);
     return $contactAddress;
   }
 
   private function vatBillingTreatment($order) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-
     $vat = [];
     $address = $order->getBillingAddress();
 

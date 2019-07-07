@@ -27,17 +27,9 @@ class SalesOrderInvoicePay implements ObserverInterface {
   }
 
   public function execute(\Magento\Framework\Event\Observer $observer) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('SalesOrderInvoicePay');
-
     $invoice = $observer->getEvent()->getInvoice();
-    $this->_logger->info(get_class($invoice));
     $order = $invoice->getOrder();
-    $this->_logger->info(get_class($order));
 
-    $this->_logger->info($order->getTotalPaid());
     $order->setTotalPaid(0);
     $order->setBaseTotalPaid(0);
   }

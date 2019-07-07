@@ -39,7 +39,7 @@ class SalesOrderSaveAfter implements ObserverInterface {
       try {
         $zohoSalesOrderManagement = $this->_zohoOrderManagement->createEstimate($order);
       } catch (\Exception $e) {
-        $this->_logger->error('Error while creating Zoho estimate: '. $e->getMessage());
+        $this->_logger->error(__('Error while creating Zoho estimate: '. $e->getMessage()));
         throw $e;
       }
     }

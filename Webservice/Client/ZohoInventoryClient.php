@@ -51,15 +51,9 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   * @inheritdoc
   */
   public function packageAdd($salesOrderId, $package) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('packageAdd');
-
     try {
       return $this->callZoho(self::PACKAGES_API, self::POST, ['salesorder_id' => $salesOrderId, 'JSONString' => json_encode($package, true)])['package'];
     } catch (\Exception $e) {
-      $this->_logger->info($e->getMessage());
       throw new $e;
     }
   }
@@ -68,11 +62,6 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   * @inheritdoc
   */
   public function shipmentAdd($package, $shipment) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('shipmentAdd');
-
     try {
       return $this->callZoho(self::SHIPMENTS_API, self::POST, [
         'salesorder_id' => $package['salesorder_id'],
@@ -80,7 +69,6 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
         'JSONString' => json_encode($shipment, true)
       ])['shipment_order'];
     } catch (\Exception $e) {
-      $this->_logger->info($e->getMessage());
       throw new $e;
     }
   }

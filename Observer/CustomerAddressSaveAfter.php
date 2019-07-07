@@ -10,23 +10,21 @@ use Magento\Framework\Event\ObserverInterface;
 class CustomerAddressSaveAfter implements ObserverInterface {
 
   protected $_zohoContact;
+  protected $_logger;
 
   public function __construct(
-    \RTech\Zoho\Model\ZohoContact $zohoContact
+    \RTech\Zoho\Model\ZohoContact $zohoContact,
+    \Psr\Log\LoggerInterface $logger
   ) {
     $this->_zohoContact = $zohoContact;
+    $this->_logger = $logger;
   }
 
   public function execute(\Magento\Framework\Event\Observer $observer) {
-
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('CustomerAddressSaveAfter');
     try {
       $this->_zohoContact->updateAddress($observer->getCustomerAddress());
     } catch (\Exception $e) {
-      $this->_logger->info($e->getMessage());
+      $this->_logger->error(__('Unable to update address: ' . $e->getMessage()));
     }
   }
 }

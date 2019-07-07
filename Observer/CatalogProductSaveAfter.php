@@ -107,10 +107,10 @@ class CatalogProductSaveAfter implements ObserverInterface {
           $inventoryItem = $this->_zohoClient->itemAdd($item);
         } catch (ZohoItemExistsException $ex) {
           // A Zoho Item of this name already exists so try to link this product to it.
-          // To successfully link the namne and the sku must match the existing Zoho Inventory item
+          // To successfully link the name and the sku must match the existing Zoho Inventory item
           $inventoryItem = $this->_zohoClient->getItemByName($product->getName());
           if ($inventoryItem['sku'] != $product->getSku()) {
-            throw ZohoItemExistsException::create('Zoho Inventory item "' . $inventoryItem['name'] . '" already exists with sku "' . $inventoryItem['sku'] . '"');
+            throw ZohoItemExistsException::create('Zoho Inventory item ' . $inventoryItem['name'] . '" already exists with sku "' . $inventoryItem['sku']);
           }
           $this->_messageManager->addNotice('Zoho Inventory item "' . $inventoryItem['name']  . '" has been linked');
           $this->_zohoClient->itemSetActive($inventoryItem['item_id']);
@@ -170,12 +170,16 @@ class CatalogProductSaveAfter implements ObserverInterface {
         array_column($taxes, 'tax_name')
       )
     ];
-    if (!$item && $product->getStockData()['manage_stock'] == self::MANAGE_SOCK) {
-      $item = [
-      'item_type' => 'inventory',
-      'initial_stock' => 0,
-      'initial_stock_rate' => 0,
-      ];
+    try {
+      if (!$item && $product->getStockData()['manage_stock'] == self::MANAGE_SOCK) {
+        $item = [
+          'item_type' => 'inventory',
+          'initial_stock' => 0,
+          'initial_stock_rate' => 0,
+        ];
+      }
+    } catch (\Exception $e) {
+      // Just in case 'manage_stock' array index is not set in product stock data
     }
     $item = array_merge($item, [
       'name' => $product->getName(),

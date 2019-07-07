@@ -26,11 +26,6 @@ class ZohoShipping implements ZohoShippingInterface {
   * @inheritdoc
   */
   public function createShipment($zohoSalesOrderManagement, $order) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('createShipment');
-
     $zohoSalesOrder = $this->_zohoInventoryClient->getSalesOrder($zohoSalesOrderManagement->getSalesOrderId());
 
     $lineitems = array();
@@ -46,7 +41,6 @@ class ZohoShipping implements ZohoShippingInterface {
     $comments = '';
     foreach ($order->getShipmentsCollection() as $shipments) {
       foreach ($shipments->getComments() as $comment) {
-        $this->_logger->info($comment->getComment());
         $comments = strlen($comments) > 0 ? '\r\n\r\n' . $comment->getComment() : $comment->getComment();
       }
     }
@@ -58,7 +52,6 @@ class ZohoShipping implements ZohoShippingInterface {
       'notes' => $comments
     ];
     $package = $this->_zohoInventoryClient->packageAdd($zohoSalesOrderManagement->getSalesOrderId(), $package);
-    $this->_logger->info($package);
 
     $tracking = $order->getTracksCollection()->getFirstItem();
     $trackingNumber = $tracking->getNumber() ? : sprintf(__('none set'));
@@ -69,7 +62,6 @@ class ZohoShipping implements ZohoShippingInterface {
       'tracking_number' => $trackingNumber,
       'delivery_method' => $trackingTitle
     ];
-    $this->_logger->info($shipment);
     $this->_zohoInventoryClient->shipmentAdd($package, $shipment);
   }
 }

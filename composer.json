@@ -10,7 +10,8 @@
     }
   ],
   "require": {
-    "rtech/neo": "^1.0"
+    "rtech/neo": "^1.0",
+    "stripe/stripe-php": "^6.36.0"
   },
   "autoload": {
     "files": [ "registration.php" ],
