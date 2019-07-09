@@ -65,6 +65,7 @@ class CatalogProductDeleteBefore implements ObserverInterface {
           }
         }
         try {
+            $zohoInventory = $this->_zohoInventoryRepository->getId($product->getId());
             $this->_zohoClient->itemGroupDelete($zohoInventory->getZohoId());
         } catch (ZohoItemNotFoundException $e) {
           $this->_messageManager->addNotice('Zoho inventory group for "' . $zohoInventory->getProductName() . '" not found');
