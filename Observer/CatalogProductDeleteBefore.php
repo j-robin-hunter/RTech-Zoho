@@ -72,6 +72,9 @@ class CatalogProductDeleteBefore implements ObserverInterface {
         }
       }
     } catch (NoSuchEntityException $e) {
+      // Do nothing
+    } catch (ZohoOperationException $e) {
+      $this->_messageManager->addNotice('Zoho inventory error ' . $e->getMessage() . '. Product may not have been deleted from Zoho.');
     }
   }
 }
