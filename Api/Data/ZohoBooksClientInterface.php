@@ -26,7 +26,7 @@ interface ZohoBooksClientInterface {
   /**
   * Get a contact from Zoho Books
   *
-  * @param int $contactId
+  * @param string $contactId
   * @return array
   */
   public function getContact($contactId);
@@ -42,7 +42,7 @@ interface ZohoBooksClientInterface {
   /**
   * Delete a contact from Zoho Books
   *
-  * @param array $contactId
+  * @param string $contactId
   * @return array
   */
   public function deleteContact($contactId);
@@ -50,7 +50,7 @@ interface ZohoBooksClientInterface {
   /**
   * Mark a Zoho Books contact as inactive
   *
-  * @param int $contactId
+  * @param string $contactId
   */
   public function contactSetInactive($contactId);
 
@@ -134,4 +134,39 @@ interface ZohoBooksClientInterface {
   * @param string $invoiceId
   */
   public function deleteInvoice($invoiceId);
+
+  /**
+  * Get an address from Zoho Books
+  *
+  * @param string $addressId
+  * @return array
+  */
+  public function getAddress($addressId);
+
+  /**
+  * Add an address to Zoho Books
+  *
+  * @param string $contactId
+  * @param array $address
+  * @return array
+  */
+  public function addAddress($contactId, $address);
+
+  /**
+  * Update an address to Zoho Books
+  *
+  * @param string $contactId
+  * @param string $addressId
+  * @param array $address
+  * @return array
+  */
+  public function updateAddress($contactId, $addressId, $address);
+
+  /**
+  * Delete an address from Zoho Books
+  *
+  * @param string $contactId
+  * @param string $addressId
+  */
+  public function deleteAddress($contactId, $address);
 }

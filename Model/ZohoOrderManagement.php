@@ -12,7 +12,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 class ZohoOrderManagement implements ZohoOrderManagementInterface {
 
   protected $_zohoClient;
-  protected $_zohoContact;
+  protected $_zohoOrderContact;
   protected $_zohoInventoryRepository;
   protected $_zohoShippingSkuId;
   protected $_quoteValidity;
@@ -24,7 +24,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     \RTech\Zoho\Helper\ConfigData $configData,
     \Zend\Http\Client $zendClient,
     \Magento\Store\Model\StoreManagerInterface $storeManager,
-    \RTech\Zoho\Model\ZohoContact $zohoContact,
+    \RTech\Zoho\Model\ZohoOrderContact $zohoOrderContact,
     \RTech\Zoho\Model\ZohoInventoryRepository $zohoInventoryRepository,
     \Magento\Catalog\Model\ProductRepository $productRepository,
     \Magento\CatalogInventory\Api\StockRegistryInterface $stockRegistry,
@@ -33,12 +33,12 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   ) {
     $this->_zohoClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
     $this->_zohoInventoryRepository = $zohoInventoryRepository;
-    $this->_zohoContact = $zohoContact;
+    $this->_zohoOrderContact = $zohoOrderContact;
 
     $storeId = $storeManager->getStore()->getId();
     $shippingSku = $configData->getZohoShippingSku($storeId);
     $shippingProduct = $productRepository->get($shippingSku);
-    $this->_zohoShippingSkuId = $zohoInventoryRepository->getId($shippingProduct->getId())->getZohoId();
+    $this->_zohoShippingSkuId = $zohoInventoryRepository->getById($shippingProduct->getId())->getZohoId();
     $this->_quoteValidity = $configData->getZohoQuoteValidity($storeId);
     $this->_stockRegistry = $stockRegistry;
     $this->_zohoSalesOrderManagementRepository = $zohoSalesOrderManagementRepository;
@@ -49,8 +49,12 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   * @inheritdoc
   */
   public function createEstimate($order) {
-    $contact = $this->_zohoContact->getContactId($order);
-    $contact = $this->_zohoContact->updateContact($contact, $order);
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('createEstimate');
+    $contact = $this->_zohoOrderContact->getContactForOrder($order);
+    $contact = $this->_zohoOrderContact->updateOrderContact($contact, $order);
 
     $estimate = [
       'customer_id' => $contact['contact_id'],
@@ -58,6 +62,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'expiry_date' => date('Y-m-d', strtotime($order->getCreatedAt() . ' + ' . $this->_quoteValidity . 'days')),
       'is_inclusive_tax' => false
     ];
+    $this->_logger->info($estimate);
 
     if ($order->getStatusHistories()) {
       $histories = $order->getStatusHistories();
@@ -78,7 +83,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     return $this->_zohoSalesOrderManagementRepository->save($zohoSalesOrderManagement);
   }
 
-    /**
+  /**
   * @inheritdoc
   */
   public function acceptEstimate($zohoSalesOrderManagement) {
@@ -90,7 +95,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   * @inheritdoc
   */
   public function createSalesOrder($zohoSalesOrderManagement, $order) {
-    $contact = $this->_zohoContact->getContactId($order);
+    $contact = $this->_zohoOrderContact->getContactForOrder($order);
 
     $salesOrder = [
       'customer_id' => $zohoSalesOrderManagement->getZohoId(),
@@ -161,7 +166,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $euVat = $contact['vat_treatment'] == 'eu_vat_registered' ? true : false;
     $lineItems = array();
     foreach ($order->getAllItems() as $item) {
-      $zohoInventory = $this->_zohoInventoryRepository->getId($item->getProductId());
+      $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
       $lineitem = [
         'item_id' => $zohoInventory->getZohoId(),
         'quantity' => $item->getQtyOrdered(),

@@ -30,7 +30,12 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   * @inheritdoc
   */
   public function lookupContact($contactName, $email) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('lookupContact (client)');
     $response = $this->callZoho(self::CONTACTS_API, self::GET, ['contact_name' => $contactName, 'email' => $email]);
+    $this->_logger->info($response);
     return count($response['contacts']) == 1 ? $response['contacts'][0] : null;
   }
 
@@ -38,6 +43,11 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   * @inheritdoc
   */
   public function addContact($contact) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('addContact (client)');
+    $this->_logger->info(json_encode($contact));
     return $this->callZoho(self::CONTACTS_API, self::POST, ['JSONString' => json_encode($contact, true)])['contact'];
   }
 
@@ -52,7 +62,13 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   * @inheritdoc
   */
   public function updateContact($contact) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('updateContact (client)');
+    $this->_logger->info($contact);
     return $this->callZoho(self::CONTACTS_API . '/' . $contact['contact_id'], self::PUT, ['JSONString' => json_encode($contact, true)])['contact'];
+
   }
 
   /**
@@ -133,11 +149,7 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   * @inheritdoc
   */
   public function updateInvoice($invoiceId, $invoice) {
-    try {
     return $this->callZoho(self::INVOICES_API . '/' . $invoiceId, self::PUT, ['JSONString' => json_encode($invoice, true)])['invoice'];
-    } catch (\Exception $e) {
-      throw new $e;
-    }
   }
 
 
@@ -154,6 +166,64 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   public function deleteInvoice($invoiceId) {
     if ($invoiceId) {
       $this->callZoho(self::INVOICES_API .'/' . $invoiceId, self::DELETE, []);
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function getAddress($addressId) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('getAddress (client)');
+    return $this->callZoho(self::CONTACTS_API . '/' . $addressId . '/address', self::GET, [])['contact'];
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function addAddress($contactId, $address) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('addAddress (client)');
+    $this->_logger->info($contactId);
+    $this->_logger->info($address);
+    try {
+    return $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/address', self::POST, ['JSONString' => json_encode($address, true)])['address_info'];
+    } catch (\Exception $e) {
+    $this->_logger->info($e->getMessage());
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function updateAddress($contactId, $addressId, $address) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('updateAddress (client)');
+    try {
+      return $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/address/' . $addressId, self::PUT, ['JSONString' => json_encode($address, true)])['address_info'];
+    } catch (\Exception $e) {
+    $this->_logger->info($e->getMessage());
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function deleteAddress($contactId, $addressId) {
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
+    $this->_logger = new \Zend\Log\Logger();
+    $this->_logger->addWriter($writer);
+    $this->_logger->info('deleteAddress (client)');
+    try {
+      return $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/address/' . $addressId, self::DELETE, []);
+    } catch (\Exception $e) {
+    $this->_logger->info($e->getMessage());
     }
   }
 }

@@ -30,7 +30,7 @@ class SalesOrderShipmentSaveBefore implements ObserverInterface {
     $shipment = $observer->getEvent()->getShipment();
     $order = $shipment->getOrder();
     foreach ($order->getAllItems() as $item) {
-      $zohoInventory = $this->_zohoInventoryRepository->getId($item->getProductId());
+      $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
       $zohoItem = $this->_zohoClient->getItem($zohoInventory->getZohoId());
       $sku = $item->getSku();
       $stockItem = $this->_stockRegistry->getStockItemBySku($sku);

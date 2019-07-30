@@ -54,7 +54,7 @@ class CatalogProductSaveAfter implements ObserverInterface {
   public function execute(\Magento\Framework\Event\Observer $observer) {
     $product = $observer->getProduct();
     try {
-      $zohoInventory = $this->_zohoInventoryRepository->getId($product->getId());
+      $zohoInventory = $this->_zohoInventoryRepository->getById($product->getId());
       $zohoItemId = $zohoInventory->getZohoId();
     } catch (NoSuchEntityException $ex) {
       // Treat as a new product
@@ -93,7 +93,7 @@ class CatalogProductSaveAfter implements ObserverInterface {
         // Check that the Zoho Inventory group is enabled is this product is enabled
         if ($product->getStatus() == self::ENABLED) {
           foreach ($this->_configurable->getParentIdsByChild($product->getId()) as $parentId) {
-            $zohoInventory = $this->_zohoInventoryRepository->getId($parentId);
+            $zohoInventory = $this->_zohoInventoryRepository->getById($parentId);
             if ($zohoInventory->getZohoId()) {
               $this->_zohoClient->itemGroupSetActive($zohoInventory->getZohoId());
             }
@@ -219,7 +219,7 @@ class CatalogProductSaveAfter implements ObserverInterface {
     );
 
     foreach ($product->getTypeInstance()->getUsedProducts($product) as $child) {
-      $zohoInventory = $this->_zohoInventoryRepository->getId($child->getId());
+      $zohoInventory = $this->_zohoInventoryRepository->getById($child->getId());
 
       if (!$zohoInventory->getId()) {
         // No Zoho Inventory cross reference so retrieve from Zoho Inventory by name

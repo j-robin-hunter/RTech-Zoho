@@ -36,7 +36,7 @@ class CatalogProductAttributeUpdateBefore implements ObserverInterface {
     if (isset($observer->getData('attributes_data')['status'])) {
       $status = $observer->getData('attributes_data')['status'];
       foreach ($observer->getData('product_ids') as $productId) {
-        $zohoInventory = $this->_zohoInventoryRepository->getId($productId);
+        $zohoInventory = $this->_zohoInventoryRepository->getById($productId);
         try {
           if ($zohoInventory->getZohoType() == self::ZOHO_ITEM) {
             ($status == self::ENABLED)?$this->_zohoClient->itemSetActive($zohoInventory->getZohoId()):$this->_zohoClient->itemSetInActive($zohoInventory->getZohoId());

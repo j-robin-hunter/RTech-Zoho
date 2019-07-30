@@ -16,7 +16,7 @@ interface ZohoInventoryRepositoryInterface {
   * @return \RTech\Zoho\Api\Data\ZohoInventoryInterface
   * @throws \Magento\Framework\Exception\NoSuchEntityException
   */
-  public function getId($productId);
+  public function getById($productId);
 
   /**
   * @param \RTech\Zoho\Api\Data\ZohoInventoryInterface $zohoInventory

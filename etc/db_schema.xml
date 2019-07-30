@@ -29,6 +29,17 @@
                 referenceColumn="entity_id" onDelete="CASCADE"/>
   </table>
 
+  <table name="zoho_address" resource="default" engine="innodb" comment="Zoho Books Customer Address Ids">
+    <column xsi:type="int" name="customer_address_id" padding="10" unsigned="true" nullable="false" identity="false" comment="Magento Customer Address ID"/>
+    <column xsi:type="int" name="customer_id" padding="10" unsigned="true" nullable="false" identity="false" comment="Magento Customer ID"/>
+    <column xsi:type="boolean" name="billing" nullable="false" default="false" comment="Billing Address Type"/>
+    <column xsi:type="boolean" name="shipping" nullable="false" default="false" comment="Shipping Address Type"/>
+    <column xsi:type="varchar" name="zoho_address_id" nullable="false" length="32" comment="Zoho Address Id"/>
+    <constraint xsi:type="foreign" referenceId="ZOHO_BOOKS_CUSTOMER_ADDRESS_ID_CUSTOMER_ADDRESS_ENTITY_ID"
+                table="zoho_address" column="customer_address_id" referenceTable="customer_address_entity"
+                referenceColumn="entity_id" onDelete="CASCADE"/>
+  </table>
+
   <table name="zoho_sales_order_management" resource="default" engine="innodb" comment="Zoho Books Sales Order Management Ids">
     <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false" identity="false" comment="Magento Sales Order ID"/>
     <column xsi:type="varchar" name="zoho_id" nullable="false" length="32" comment="Zoho Customer Id"/>

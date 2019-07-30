@@ -6,30 +6,26 @@
 namespace RTech\Zoho\Model;
 
 use RTech\Zoho\Api\ZohoSalesOrderManagementRepositoryInterface;
-use RTech\Zoho\Model\ResourceModel\ZohoSalesOrderManagement as ZohoSalesOrderManagementResource;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\CouldNotDeleteException;
 
 class ZohoSalesOrderManagementRepository implements ZohoSalesOrderManagementRepositoryInterface {
 
-  protected $zohoSalesOrderManagementResource;
   protected $zohoSalesOrderManagementFactory;
 
   public function __construct(
-    ZohoSalesOrderManagementResource $zohoSalesOrderManagementResource,
     ZohoSalesOrderManagementFactory $zohoSalesOrderManagementFactory
   ) {
-    $this->zohoSalesOrderManagementResource = $zohoSalesOrderManagementResource;
     $this->zohoSalesOrderManagementFactory = $zohoSalesOrderManagementFactory;
   }
 
   /**
   * @inheritdoc
   */
-  public function getId($orderId) {
+  public function getById($orderId) {
     $zohoSalesOrderManagement = $this->zohoSalesOrderManagementFactory->create();
-    $this->zohoSalesOrderManagementResource->load($zohoSalesOrderManagement, $orderId);
+    $zohoSalesOrderManagement->getResource()->load($zohoSalesOrderManagement, $orderId);
     if (!$zohoSalesOrderManagement->getId()) {
       throw new NoSuchEntityException(__('No Zoho Sales Order Management entry for order with id "%1" exists.', $orderId));
     }
@@ -41,7 +37,7 @@ class ZohoSalesOrderManagementRepository implements ZohoSalesOrderManagementRepo
   */
   public function save($zohoSalesOrderManagement) {
     try {
-      $this->zohoSalesOrderManagementResource->save($zohoSalesOrderManagement);
+      $zohoSalesOrderManagement->getResource()->save($zohoSalesOrderManagement);
     } catch (\Exception $exception) {
       throw new CouldNotSaveException(__($exception->getMessage()));
     }
@@ -53,7 +49,7 @@ class ZohoSalesOrderManagementRepository implements ZohoSalesOrderManagementRepo
   */
   public function delete($zohoSalesOrderManagement) {
     try {
-      $this->zohoSalesOrderManagementResource->delete($zohoSalesOrderManagement);
+      $zohoSalesOrderManagement->getResource()->delete($zohoSalesOrderManagement);
     } catch (\Exception $exception) {
       throw new CouldNotDeleteException(__($exception->getMessage()));
     }

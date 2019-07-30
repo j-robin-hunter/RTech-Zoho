@@ -16,7 +16,7 @@ interface ZohoSalesOrderManagementRepositoryInterface {
   * @return \RTech\Zoho\Api\Data\ZohoSalesOrderManagementInterface
   * @throws \Magento\Framework\Exception\NoSuchEntityException
   */
-  public function getId($salesOrderId);
+  public function getById($salesOrderId);
 
   /**
   * @param \RTech\Zoho\Api\Data\ZohoSalesOrderManagementInterface $zohoSalesOrderManagement

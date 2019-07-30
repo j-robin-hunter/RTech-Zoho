@@ -16,7 +16,7 @@ interface ZohoCustomerRepositoryInterface {
   * @return \RTech\Zoho\Api\Data\ZohoCustomerInterface
   * @throws \Magento\Framework\Exception\NoSuchEntityException
   */
-  public function getId($customerId);
+  public function getById($customerId);
 
   /**
   * @param \RTech\Zoho\Api\Data\ZohoCustomerInterface $zohoCustomer

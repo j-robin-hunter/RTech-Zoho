@@ -8,15 +8,15 @@ namespace RTech\Zoho\Observer;
 use Magento\Framework\Event\ObserverInterface;
 
 class CustomerRegisterSuccess implements ObserverInterface {
-  protected $_zohoContact;
+  protected $_zohoCustomerContact;
 
   public function __construct(
-    \RTech\Zoho\Model\ZohoContact $zohoContact
+    \RTech\Zoho\Model\ZohoCustomerContact $zohoCustomerContact
   ) {
-    $this->_zohoContact = $zohoContact;
+    $this->_zohoCustomerContact = $zohoCustomerContact;
   }
 
   public function execute(\Magento\Framework\Event\Observer $observer) {
-    $this->_zohoContact->createContact($observer->getCustomer());
+    $this->_zohoCustomerContact->getContact($observer->getCustomer());
   }
 }

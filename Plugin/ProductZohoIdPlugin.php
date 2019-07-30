@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright © 2018 Roma Technology Limited. All rights reserved.
+ * Copyright © 2019 Roma Technology Limited. All rights reserved.
  * See COPYING.txt for license details.
  */
 namespace RTech\Zoho\Plugin;
@@ -39,7 +39,7 @@ class ProductZohoIdPlugin {
     \Magento\Catalog\Api\Data\ProductInterface $product
   ) {
     try {
-      $zohoInventory = $this->zohoInventoryRepository->getId($product->getId());
+      $zohoInventory = $this->zohoInventoryRepository->getById($product->getId());
     } catch (NoSuchEntityException $eNoSuchEntityException) {
       // Need to verify that the product is not simply missing from the Zoho Inventory
       // table by verifying that there is no Zoho Inventory product with the same name and sku

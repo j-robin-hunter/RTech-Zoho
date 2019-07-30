@@ -9,16 +9,16 @@ use Magento\Framework\Event\ObserverInterface;
 
 class CustomerDeleteBefore implements ObserverInterface {
 
-  protected $_zohoContact;
+  protected $_zohoCustomerContact;
 
   public function __construct(
-    \RTech\Zoho\Model\ZohoContact $zohoContact
+    \RTech\Zoho\Model\ZohoCustomerContact $zohoCustomerContact
   ) {
-    $this->_zohoContact = $zohoContact;
+    $this->_zohoCustomerContact = $zohoCustomerContact;
   }
 
 
   public function execute(\Magento\Framework\Event\Observer $observer) {
-    $this->_zohoContact->deleteContact($observer->getCustomer());
+    $this->_zohoCustomerContact->deleteContact($observer->getCustomer());
   }
 }
