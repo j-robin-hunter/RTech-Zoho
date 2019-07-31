@@ -46,11 +46,6 @@ class AddressRepositoryZohoPlugin {
     callable $save,
     \Magento\Customer\Api\Data\AddressInterface $address
   ) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('aroundSave');
-
     // Call save to persist address to database
     $savedAddress = $save($address);
 
@@ -58,41 +53,12 @@ class AddressRepositoryZohoPlugin {
     $removeBilling = (!$address->isDefaultBilling() && $savedAddress->isDefaultBilling());
     $addShipping = $address->isDefaultShipping();
     $removeShipping = (!$address->isDefaultShipping() && $savedAddress->isDefaultShipping());
-
-    /*
-    if ($address->isDefaultBilling() && $address->isDefaultShipping()) {
-      $this->_logger->info('add billing');
-      $this->_logger->info('add shipping');
-    } elseif ($address->isDefaultBilling()) {
-      $this->_logger->info('add billing');
-      if (!$address->isDefaultShipping() && $savedAddress->isDefaultShipping()) {
-        $this->_logger->info('remove shipping');
-      }
-    } elseif ($address->isDefaultShipping()) {
-      $this->_logger->info('add shipping');
-      if (!$address->isDefaultBilling() && $savedAddress->isDefaultBilling()) {
-        $this->_logger->info('remove billing');
-      }
-    } else {
-      $this->_logger->info('add additional');
-    }
-    */
-
-    $this->_logger->info('add billing: ' . $addBilling);
-    $this->_logger->info('remove billing: ' . $removeBilling);
-    $this->_logger->info('add shipping: ' . $addShipping);
-    $this->_logger->info('remove shipping: ' . $removeShipping);
-
     $this->updateZoho($address, $addBilling, $addShipping, $removeBilling, $removeShipping);
 
     return $savedAddress;
   }
 
   private function updateZoho($address, $addBilling, $addShipping, $removeBilling, $removeShipping) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('updateZoho');
 
     $customerId = $address->getCustomerId();
     $customer = $this->_customerRepository->getById($customerId);
@@ -116,7 +82,6 @@ class AddressRepositoryZohoPlugin {
         addFilter('customer_id', $customerId, 'eq')->
         create();
       $zohoAddresses = $this->_zohoAddressRepository->getList($searchCriteria);
-      $this->_logger->info('number of addresses: ' . count($zohoAddresses->getItems()));
       $zohoAddress = current($zohoAddresses->getItems());
 
       $zohoContact = [
@@ -168,9 +133,7 @@ class AddressRepositoryZohoPlugin {
         }
       } else {
         if (!empty($zohoAddress)) {
-          $this->_logger->info('Do I need to delete the additional address? ' . $zohoAddress->getBilling() . ', ' . $zohoAddress->getShipping());
           if (!$zohoAddress->getBilling() && !$zohoAddress->getShipping() && $zohoAddress->getZohoAddressId()) {
-            $this->_logger->info('Yes I do ... '  . $zohoCustomerId . ', ' .  $zohoAddress->getZohoAddressId());
             $this->_zohoClient->deleteAddress($zohoCustomerId, $zohoAddress->getZohoAddressId());
           }
         }
@@ -179,17 +142,11 @@ class AddressRepositoryZohoPlugin {
       $this->saveZohoAddress($address->getId(), $customerId, $addBilling, $addShipping, $zohoAddressId);
 
     } catch (\Exception $ex) {
-      $this->_logger->info($ex->getMessage());
       $this->_logger->error(__('Error while saving address to Zoho Books: ' . $ex->getMessage()));
     }
   }
 
   private function saveZohoAddress($customerAddressId, $customerId, $billing, $shipping, $zohoAddressId) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('saveZohoAddress');
-
     $zohoAddress = $this->_zohoAddressFactory->create();
     $zohoAddress->setData([
       'customer_address_id' => $customerAddressId,

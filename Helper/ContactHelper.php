@@ -68,10 +68,6 @@ class ContactHelper {
   }
 
   public function getContactArray($prefix, $firstName, $middleName, $lastName, $suffix, $email, $website) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('getContactArray');
     return [
       'contact_name' => $this->getContactName($prefix, $firstName, $middleName, $lastName, $suffix),
       'contact_type' => 'customer',
@@ -86,28 +82,15 @@ class ContactHelper {
     ];
   }
 
-  public function getContactName($prefix, $firstName, $middleName, $lastName, $suffix) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('getContactName');
-
-    $contactName = $prefix ? $prefix . ' ' : '';
+  public function getContactName($prefix, $firstName, $middleName, $lastName, $suffix) {    $contactName = $prefix ? $prefix . ' ' : '';
     $contactName .= $firstName;
     $contactName .= $middleName ? ' ' . $middleName . ' ' : ' ';
     $contactName .= $lastName;
     $contactName .= $suffix ? ' ' . $suffix : '';
-
-    $this->_logger->info(substr(trim($contactName), 0, 200));
     return substr(trim($contactName), 0, 200);
   }
 
   public function updateAddresses($contact, $billingAddress, $shippingAddress, $groupId) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('updateAddresses');
-
     $allowed = self::ALLOWED_ZOHO_KEYS;
     $contact = array_filter($contact,
       function ($key) use ($allowed) {
@@ -134,12 +117,6 @@ class ContactHelper {
   }
 
   public function getAddressArray($address) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('getAddressArray');
-    $this->_logger->info(get_class($address));
-
     if (count($address->getStreet()) >= 2) {
       $street2 = $address->getStreet()[1]?:'';
       if (count($address->getStreet()) >= 3) {
@@ -178,17 +155,11 @@ class ContactHelper {
       'phone' => $address->getTelephone()?:'',
       'fax' => $address->getFax()?:''
     ];
-    $this->_logger->info($contactAddress);
 
     return $contactAddress;
   }
 
   public function vatBillingTreatment($address, $groupId) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('vatBillingTreatment');
-
     $vat = [];
 
     if ($address) {

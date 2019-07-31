@@ -48,17 +48,11 @@ class ZohoAddressRepository implements ZohoAddressRepositoryInterface {
   * @inheritdoc
   */
   public function save($zohoAddress) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('ZohoAddressRepository save');
     try {
       $zohoAddress->getResource()->save($zohoAddress);
     } catch (\Exception $exception) {
-      $this->_logger->info($exception->getMessage());
       throw new CouldNotSaveException(__($exception->getMessage()));
     }
-    $this->_logger->info('ZohoAddressRepository done save');
     return $zohoAddress;
   }
 
@@ -66,17 +60,9 @@ class ZohoAddressRepository implements ZohoAddressRepositoryInterface {
   * @inheritdoc
   */
   public function delete($zohoAddress) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('ZohoAddressRepository delete');
-    $this->_logger->info(get_class($zohoAddress));
-    $this->_logger->info(get_class($zohoAddress->getResource()));
     try {
       $zohoAddress->getResource()->delete($zohoAddress);
     } catch (\Exception $exception) {
-      $this->_logger->info($exception->getMessage());
-      $this->_logger->info($exception->getMessage());
       throw new CouldNotDeleteException(__($exception->getMessage()));
     }
     return $zohoAddress;

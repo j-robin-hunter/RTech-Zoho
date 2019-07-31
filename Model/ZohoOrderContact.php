@@ -41,19 +41,10 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
   * @inheritdoc
   */
   public function getContactForOrder($order) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('getContactForOrder');
-
     try {
       $zohoCustomer = $this->_zohoCustomerRepository->getById($order->getCustomerId());
-      $this->_logger->info('zohoCustomer: ' . $zohoCustomer);
-
       $contact = $this->_zohoClient->getContact($zohoCustomer->getZohoId());
-
     } catch (NoSuchEntityException $e) {
-      $this->_logger->info('NoSuchEntityException');
 
       // Try to lookup the contact
       $contact = $this->_zohoClient->lookupContact(
@@ -69,7 +60,6 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
         $contact = $this->_zohoClient->getContact($contact['contact_id']);
       } else {
         // Create a new contact
-        $this->_logger->info('create client');
         $contact = $this->_zohoClient->addContact(
           $contact = $this->_contactHelper->getContactArray(
             $order->getCustomerPrefix(),
@@ -82,7 +72,6 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
             $order->getCustomerGroupId()
           )
         );
-        $this->_logger->info($contact);
       }
       if ($order->getCustomerId()) {
         // Not a guest so create entry in zoho_customer table
@@ -105,10 +94,6 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
   * @inheritdoc
   */
   public function updateOrderContact($contact, $order) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('updateOrderContact');
     $contact['contact_name'] = $this->_contactHelper->getContactName(
       $order->getCustomerFirstname(),
       $order->getCustomerLastname(),
@@ -133,7 +118,6 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
       $order->getShippingAddress(),
       $order->getCustomerGroupId()
     );
-    $this->_logger->info($contact);
 
     return $this->_zohoClient->updateContact($contact);
   }

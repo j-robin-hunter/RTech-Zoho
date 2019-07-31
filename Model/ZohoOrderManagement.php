@@ -49,10 +49,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   * @inheritdoc
   */
   public function createEstimate($order) {
-    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/log_file_name.log');
-    $this->_logger = new \Zend\Log\Logger();
-    $this->_logger->addWriter($writer);
-    $this->_logger->info('createEstimate');
     $contact = $this->_zohoOrderContact->getContactForOrder($order);
     $contact = $this->_zohoOrderContact->updateOrderContact($contact, $order);
 
@@ -62,7 +58,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'expiry_date' => date('Y-m-d', strtotime($order->getCreatedAt() . ' + ' . $this->_quoteValidity . 'days')),
       'is_inclusive_tax' => false
     ];
-    $this->_logger->info($estimate);
 
     if ($order->getStatusHistories()) {
       $histories = $order->getStatusHistories();
