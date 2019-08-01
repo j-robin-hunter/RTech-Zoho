@@ -82,7 +82,8 @@ class ContactHelper {
     ];
   }
 
-  public function getContactName($prefix, $firstName, $middleName, $lastName, $suffix) {    $contactName = $prefix ? $prefix . ' ' : '';
+  public function getContactName($prefix, $firstName, $middleName, $lastName, $suffix) {
+    $contactName = $prefix ? $prefix . ' ' : '';
     $contactName .= $firstName;
     $contactName .= $middleName ? ' ' . $middleName . ' ' : ' ';
     $contactName .= $lastName;
@@ -90,6 +91,7 @@ class ContactHelper {
     return substr(trim($contactName), 0, 200);
   }
 
+  /*
   public function updateAddresses($contact, $billingAddress, $shippingAddress, $groupId) {
     $allowed = self::ALLOWED_ZOHO_KEYS;
     $contact = array_filter($contact,
@@ -115,6 +117,7 @@ class ContactHelper {
     $contact['contact_name'] = empty($contact['company_name'])?$contact['contact_name']:$contact['company_name'];
     return $contact;
   }
+  */
 
   public function getAddressArray($address) {
     if (count($address->getStreet()) >= 2) {

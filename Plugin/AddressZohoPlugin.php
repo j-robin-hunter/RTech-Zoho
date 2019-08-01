@@ -35,7 +35,6 @@ class AddressZohoPlugin {
     \Magento\Customer\Model\ResourceModel\Address $subject,
     \Magento\Customer\Model\Address $address
   ) {
-
     $address = $address->getDataModel();
 
     // Locate any exisitng zoho_address record for this address

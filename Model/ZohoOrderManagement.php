@@ -49,8 +49,9 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   * @inheritdoc
   */
   public function createEstimate($order) {
+
     $contact = $this->_zohoOrderContact->getContactForOrder($order);
-    $contact = $this->_zohoOrderContact->updateOrderContact($contact, $order);
+    $contact = $this->_zohoOrderContact->updateOrderContact($contact['contact_id'], $order);
 
     $estimate = [
       'customer_id' => $contact['contact_id'],
@@ -64,7 +65,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       $estimate['notes'] = array_pop($histories)->getComment();
     }
 
-    $estimate['line_items'] = $this->createLineitems($contact, $order);
+    $estimate['line_items'] = $this->createLineitems($order);
 
     $zohoEstimate = $this->_zohoClient->addEstimate($estimate);
     $this->_zohoClient->markEstimateSent($zohoEstimate['estimate_id']);
@@ -75,6 +76,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'zoho_id' => $contact['contact_id'],
       'estimate_id' => $zohoEstimate['estimate_id']
     ]);
+
     return $this->_zohoSalesOrderManagementRepository->save($zohoSalesOrderManagement);
   }
 
@@ -90,7 +92,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   * @inheritdoc
   */
   public function createSalesOrder($zohoSalesOrderManagement, $order) {
-    $contact = $this->_zohoOrderContact->getContactForOrder($order);
 
     $salesOrder = [
       'customer_id' => $zohoSalesOrderManagement->getZohoId(),
@@ -101,12 +102,11 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       $histories = $order->getStatusHistories();
       $salesOrder['notes'] = array_pop($histories)->getComment();
     }
-    $salesOrder['line_items'] = $this->createLineitems($contact, $order);
+    $salesOrder['line_items'] = $this->createLineitems($order);
 
     $zohoSalesOrder = $this->_zohoClient->addSalesOrder($salesOrder);
 
     $zohoSalesOrderManagement->setSalesOrderId($zohoSalesOrder['salesorder_id']);
-
     return $this->_zohoSalesOrderManagementRepository->save($zohoSalesOrderManagement);
   }
 
@@ -155,10 +155,12 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $this->_zohoClient->deleteEstimate($zohoSalesOrderManagement->getEstimateId());
   }
 
-  private function createLineitems($contact, $order) {
+  private function createLineitems($order) {
+
     $taxes = $this->_zohoClient->getTaxes();
     $zeroRate = $taxes[array_search(0, array_column($taxes, 'tax_percentage'))]['tax_id'];
-    $euVat = $contact['vat_treatment'] == 'eu_vat_registered' ? true : false;
+    $euVat = $this->_zohoOrderContact->getVatTreatment($order) == 'eu_vat_registered' ? true : false;
+
     $lineItems = array();
     foreach ($order->getAllItems() as $item) {
       $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());

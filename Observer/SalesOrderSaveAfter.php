@@ -29,14 +29,13 @@ class SalesOrderSaveAfter implements ObserverInterface {
 
 
   public function execute(\Magento\Framework\Event\Observer $observer) {
-
     $order = $observer->getEvent()->getOrder();
 
     try {
       // Get the existing state of the order between Magento and Zoho
       $zohoSalesOrderManagement = $this->_zohoSalesOrderManagementRepository->getById($order->getId());
     } catch (NoSuchEntityException $e) {
-      // No record of the order tso start be creating a Zoho estimate
+      // No record of the order so start be creating a Zoho estimate
       try {
         $zohoSalesOrderManagement = $this->_zohoOrderManagement->createEstimate($order);
       } catch (\Exception $e) {
@@ -80,6 +79,7 @@ class SalesOrderSaveAfter implements ObserverInterface {
           $this->_zohoSalesOrderManagementRepository->delete($zohoSalesOrderManagement);
           break;
       }
+
     } catch (\Exception $e) {
       $this->_logger->error(__('Error processing sales order in state ' . $order->getStatusLabel() . ': '. $e->getMessage()));
       throw $e;

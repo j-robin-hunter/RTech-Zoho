@@ -46,30 +46,19 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
       $contact = $this->_zohoClient->getContact($zohoCustomer->getZohoId());
     } catch (NoSuchEntityException $e) {
 
-      // Try to lookup the contact
-      $contact = $this->_zohoClient->lookupContact(
-        $this->_contactHelper->getContactName(
-          $order->getCustomerFirstname(),
-          $order->getCustomerLastname(),
-          $order->getBillingAddress()),
-        $order->getCustomerEmail());
+      $contact = $this->_zohoClient->lookupContact($this->getContactName($order), $order->getCustomerEmail());
 
-      if ($contact) {
-        // Need to retrieve full contact record
-        $this->_messageManager->addNotice('Zoho Contact "' . $contact['contact_name']  . '" has been linked');
-        $contact = $this->_zohoClient->getContact($contact['contact_id']);
-      } else {
+      if (!$contact) {
         // Create a new contact
         $contact = $this->_zohoClient->addContact(
           $contact = $this->_contactHelper->getContactArray(
             $order->getCustomerPrefix(),
             $order->getCustomerFirstname(),
+            $order->getCustomerMiddlename(),
             $order->getCustomerLastname(),
+            $order->getCustomerSuffix(),
             $order->getCustomerEmail(),
-            $order->getCustomerWebsite(),
-            $order->getBillingAddress(),
-            $order->getShippingAddress(),
-            $order->getCustomerGroupId()
+            $order->getCustomerWebsite()
           )
         );
       }
@@ -93,15 +82,21 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
   /**
   * @inheritdoc
   */
-  public function updateOrderContact($contact, $order) {
-    $contact['contact_name'] = $this->_contactHelper->getContactName(
-      $order->getCustomerFirstname(),
-      $order->getCustomerLastname(),
-      $order->getBillingAddress()
-    );
-    $contact['first_name'] = $order->getCustomerFirstname();
-    $contact['last_name'] = $order->getCustomerLastname();
-    $contact['email'] = $order->getCustomerEmail();
+  public function updateOrderContact($contactId, $order) {
+
+    $billingAddress = $order->getBillingAddress();
+    $shippingAddress = $order->getShippingAddress();
+    $vat = $this->_contactHelper->vatBillingTreatment($billingAddress, $order->getCustomerGroupId());
+
+    $contact = [
+      'contact_id' => $contactId,
+      'contact_name' => $this->getContactName($order),
+      'vat_reg_no' => $vat['vat_reg_no'],
+      'vat_treatment' => $vat['vat_treatment'],
+      'country_code' => $vat['country_code'],
+      'billing_address' => $this->_contactHelper->getAddressArray($billingAddress),
+      'shipping_address' => $this->_contactHelper->getAddressArray($shippingAddress)
+    ];
 
     try {
       $primaryIndex = array_search(true, array_column($contact['contact_persons'], 'is_primary_contact'));
@@ -112,14 +107,22 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
     } catch (\Exception $ex) {
       // No person updates as no primary person
     }
-    $contact = $this->_contactHelper->updateAddresses(
-      $contact,
-      $order->getBillingAddress(),
-      $order->getShippingAddress(),
-      $order->getCustomerGroupId()
-    );
 
     return $this->_zohoClient->updateContact($contact);
   }
 
+  public function getVatTreatment($order) {
+    $vat = $this->_contactHelper->vatBillingTreatment($order->getBillingAddress(), $order->getCustomerGroupId());
+    return $vat['vat_treatment'];
+  }
+
+  private function getContactName($order) {
+    return $order->getBillingAddress()->getCompany() ? : $this->_contactHelper->getContactName(
+      $order->getCustomerPrefix(),
+      $order->getCustomerFirstname(),
+      $order->getCustomerMiddlename(),
+      $order->getCustomerLastname(),
+      $order->getCustomerSuffix()
+    );
+  }
 }

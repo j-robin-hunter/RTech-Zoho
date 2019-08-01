@@ -26,7 +26,7 @@ class ZohoCustomerRepository implements ZohoCustomerRepositoryInterface {
   public function getById($customerId) {
     $zohoCustomer = $this->zohoCustomerFactory->create();
     $response = $zohoCustomer->getResource()->load($zohoCustomer, $customerId);
-    if (!$zohoCustomer->getId()) {
+    if (empty($zohoCustomer->getId())) {
       throw new NoSuchEntityException(__('No Zoho Books entry for customer with id "%1" exists.', $customerId));
     }
     return $zohoCustomer;

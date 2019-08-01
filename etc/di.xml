@@ -28,10 +28,9 @@
   <type name="Magento\Customer\Api\AddressRepositoryInterface">
     <plugin name="addressRepositoryZohoPlugin" type="RTech\Zoho\Plugin\AddressRepositoryZohoPlugin"/>
   </type>
-  <type name="Magento\Sales\Model\Spi\OrderAddressResourceInterface">
-    <plugin name="checkZohoAddtionalAddressOrder" type="RTech\Zoho\Plugin\OrderAddress"/>
-  </type>
+
   <type name="Magento\Customer\Model\ResourceModel\Address">
     <plugin name="addressZohoPlugin" type="RTech\Zoho\Plugin\AddressZohoPlugin"/>
   </type>
+
 </config>
