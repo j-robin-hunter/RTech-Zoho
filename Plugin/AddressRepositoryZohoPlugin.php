@@ -9,6 +9,8 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use RTech\Zoho\Webservice\Client\ZohoBooksClient;
 
 class AddressRepositoryZohoPlugin {
+  const BILLING = 0;
+  const SHIPPING = 1;
 
   protected $_zohoClient;
   protected $_zohoCustomerRepository;
@@ -17,6 +19,7 @@ class AddressRepositoryZohoPlugin {
   protected $_contactHelper;
   protected $_searchCriteriaBuilder;
   protected $_customerRepository;
+  protected $_addressRepository;
   protected $_logger;
 
   public function __construct(
@@ -29,6 +32,7 @@ class AddressRepositoryZohoPlugin {
     \RTech\Zoho\Helper\ContactHelper $contactHelper,
     \Magento\Framework\Api\SearchCriteriaBuilder $searchCriteriaBuilder,
     \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository,
+    \Magento\Customer\Api\AddressRepositoryInterface $addressRepository,
     \Psr\Log\LoggerInterface $logger
   ) {
     $this->_zohoClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
@@ -38,6 +42,7 @@ class AddressRepositoryZohoPlugin {
     $this->_contactHelper = $contactHelper;
     $this->_searchCriteriaBuilder = $searchCriteriaBuilder;
     $this->_customerRepository = $customerRepository;
+    $this->_addressRepository = $addressRepository;
     $this->_logger = $logger;
   }
 
@@ -73,41 +78,55 @@ class AddressRepositoryZohoPlugin {
     $zohoCustomerId = $this->_zohoCustomerRepository->getById($customerId)->getZohoId();
 
     $zohoAddressArray = $this->_contactHelper->getAddressArray($address);
-    $nullArray = array_fill_keys(array_keys($zohoAddressArray), '');
+    $nullAddressArray = array_fill_keys(array_keys($zohoAddressArray), '');
 
     try {
+      $zohoAddress = null;
+
       // Locate any exisitng zoho_address record for this address
+      // and update any exisiting addresses
       $searchCriteria = $this->_searchCriteriaBuilder->
-        addFilter('customer_address_id', $address->getId(), 'eq')->
         addFilter('customer_id', $customerId, 'eq')->
         create();
       $zohoAddresses = $this->_zohoAddressRepository->getList($searchCriteria);
-      $zohoAddress = current($zohoAddresses->getItems());
-
-      $zohoContact = [
-        'contact_id' => $zohoCustomerId,
-      ];
+      foreach ($zohoAddresses->getItems() as $item) {
+        if ($item->getId() == $address->getId()) {
+          $zohoAddress = $item;
+        }
+        if ($addBilling && $item->getBilling() && $item->getId() != $address->getId()) {
+          $this->updateExisitingAddress($zohoCustomerId, $item, self::BILLING, $nullAddressArray);
+        }
+        if ($addShipping && $item->getShipping() && $item->getId() != $address->getId()) {
+          $this->updateExisitingAddress($zohoCustomerId, $item, self::SHIPPING, $nullAddressArray);
+        }
+      }
 
       $zohoAddressId = '';
       if ($addBilling) {
         $vat = $this->_contactHelper->vatBillingTreatment($address, $customer->getGroupId());
-        $zohoContact['contact_name'] = empty($vat['company_name']) ? $contactName : $vat['company_name'];
-        $zohoContact['company_name'] = empty($vat['company_name']) ? '' : substr(trim($vat['company_name']), 0, 200);
-        $zohoContact['vat_reg_no'] = $vat['vat_reg_no'];
-        $zohoContact['vat_treatment'] = $vat['vat_treatment'];
-        $zohoContact['country_code'] = $vat['country_code'];
-        $zohoContact['billing_address'] = $zohoAddressArray;
+        $zohoContact = [
+          'contact_id' => $zohoCustomerId,
+          'contact_name' => empty($vat['company_name']) ? $contactName : $vat['company_name'],
+          'company_name' => empty($vat['company_name']) ? '' : substr(trim($vat['company_name']), 0, 200),
+          'vat_reg_no' => $vat['vat_reg_no'],
+          'vat_treatment' => $vat['vat_treatment'],
+          'country_code' => $vat['country_code'],
+          'billing_address' => $zohoAddressArray,
+        ];
         if ($removeShipping) {
           $zohoContact['contact_name'] = $contactName;
-          $zohoContact['shipping_address'] = $nullArray;
+          $zohoContact['shipping_address'] = $nullAddressArray;
         }
         $this->_zohoClient->updateContact($zohoContact);
       }
 
       if ($addShipping) {
-        $zohoContact['shipping_address'] = $zohoAddressArray;
+        $zohoContact = [
+          'contact_id' => $zohoCustomerId,
+          'shipping_address' => $zohoAddressArray
+        ];
         if ($removeBilling) {
-          $zohoContact['billing_address'] = $nullArray;
+          $zohoContact['billing_address'] = $nullAddressArray;
         }
         $zohoContact = $this->_zohoClient->updateContact($zohoContact);
       }
@@ -116,12 +135,15 @@ class AddressRepositoryZohoPlugin {
         if (!empty($zohoAddress)) {
           if ($zohoAddress->getBilling() || $zohoAddress->getShipping()) {
             $currentZohoContact = $this->_zohoClient->getContact($zohoCustomerId);
-            $zohoContact['contact_name'] = $currentZohoContact['contact_name'];
+            $zohoContact = [
+              'contact_id' => $zohoCustomerId,
+              'contact_name' => $currentZohoContact['contact_name']
+            ];
             if (isset($currentZohoContact['billing_address'])) {
-              $zohoContact['billing_address'] = array_merge(array('address_id' => $currentZohoContact['billing_address']['address_id']) , $nullArray);
+              $zohoContact['billing_address'] = array_merge(array('address_id' => $currentZohoContact['billing_address']['address_id']) , $nullAddressArray);
             }
             if (isset($currentZohoContact['shipping_address'])) {
-              $zohoContact['shipping_address'] = array_merge(array('address_id'=> $currentZohoContact['shipping_address']['address_id']) , $nullArray);
+              $zohoContact['shipping_address'] = array_merge(array('address_id'=> $currentZohoContact['shipping_address']['address_id']) , $nullAddressArray);
             }
             $zohoContact = $this->_zohoClient->updateContact($zohoContact);
             $zohoAddressId = $this->_zohoClient->addAddress($zohoCustomerId, $zohoAddressArray)['address_id'];
@@ -133,7 +155,7 @@ class AddressRepositoryZohoPlugin {
         }
       } else {
         if (!empty($zohoAddress)) {
-          if (!$zohoAddress->getBilling() && !$zohoAddress->getShipping() && $zohoAddress->getZohoAddressId()) {
+          if (!$zohoAddress->getBilling() && !$zohoAddress->getShipping() && !empty($zohoAddress->getZohoAddressId())) {
             $this->_zohoClient->deleteAddress($zohoCustomerId, $zohoAddress->getZohoAddressId());
           }
         }
@@ -144,6 +166,27 @@ class AddressRepositoryZohoPlugin {
     } catch (\Exception $ex) {
       $this->_logger->error(__('Error while saving address to Zoho Books: ' . $ex->getMessage()));
     }
+  }
+
+  private function updateExisitingAddress($zohoCustomerId, $zohoAddress, $type, $nullAddressArray) {
+
+    $zohoContact = ['contact_id' => $zohoCustomerId];
+    if ($type == self::BILLING) {
+      $zohoContact['billing_address'] = $nullAddressArray;
+      $zohoAddress->setBilling(false);
+    } else {
+      $zohoContact['shipping_address'] = $nullAddressArray;
+      $zohoAddress->setShipping(false);
+    }
+    $zohoContact = $this->_zohoClient->updateContact($zohoContact);
+
+    if (!$zohoAddress->getBilling() && !$zohoAddress->getShipping()) {
+      $address = $this->_addressRepository->getById($zohoAddress->getCustomerAddressId());
+      $zohoAddressArray = $this->_contactHelper->getAddressArray($address);
+      $zohoAddressId = $this->_zohoClient->addAddress($zohoCustomerId, $zohoAddressArray)['address_id'];
+      $zohoAddress->setZohoAddressId($zohoAddressId);
+    }
+    $this->_zohoAddressRepository->save($zohoAddress);
   }
 
   private function saveZohoAddress($customerAddressId, $customerId, $billing, $shipping, $zohoAddressId) {
