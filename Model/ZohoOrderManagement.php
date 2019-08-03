@@ -51,7 +51,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   public function createEstimate($order) {
 
     $contact = $this->_zohoOrderContact->getContactForOrder($order);
-    $contact = $this->_zohoOrderContact->updateOrderContact($contact['contact_id'], $order);
+    $contact = $this->_zohoOrderContact->updateOrderContact($contact, $order);
 
     $estimate = [
       'customer_id' => $contact['contact_id'],

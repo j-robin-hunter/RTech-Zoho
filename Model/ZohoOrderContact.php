@@ -82,33 +82,41 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
   /**
   * @inheritdoc
   */
-  public function updateOrderContact($contactId, $order) {
+  public function updateOrderContact($contact, $order) {
+    // If this is a guest order then make sure that Zoho has a full
+    // billing address. The shipping address is also written to Zoho
+    // although this is held within Magento as part of the order and
+    // will be used to update Zoho for packing notes etc. at the time
+    // the products are paid for and 'shipped' from within Magento
 
-    $billingAddress = $order->getBillingAddress();
-    $shippingAddress = $order->getShippingAddress();
-    $vat = $this->_contactHelper->vatBillingTreatment($billingAddress, $order->getCustomerGroupId());
+    if (empty($order->getCustomerId())) {
+      $billingAddress = $order->getBillingAddress();
+      $shippingAddress = $order->getShippingAddress();
+      $vat = $this->_contactHelper->vatBillingTreatment($billingAddress, $order->getCustomerGroupId());
 
-    $contact = [
-      'contact_id' => $contactId,
-      'contact_name' => $this->getContactName($order),
-      'vat_reg_no' => $vat['vat_reg_no'],
-      'vat_treatment' => $vat['vat_treatment'],
-      'country_code' => $vat['country_code'],
-      'billing_address' => $this->_contactHelper->getAddressArray($billingAddress),
-      'shipping_address' => $this->_contactHelper->getAddressArray($shippingAddress)
-    ];
+      $contact = [
+        'contact_id' => $contact['contact_id'],
+        'contact_name' => $this->getContactName($order),
+        'vat_reg_no' => $vat['vat_reg_no'],
+        'vat_treatment' => $vat['vat_treatment'],
+        'country_code' => $vat['country_code'],
+        'billing_address' => $this->_contactHelper->getAddressArray($billingAddress),
+        'shipping_address' => $this->_contactHelper->getAddressArray($shippingAddress)
+      ];
 
-    try {
-      $primaryIndex = array_search(true, array_column($contact['contact_persons'], 'is_primary_contact'));
-      $contact['contact_persons'][$primaryIndex]['salutation'] = $order->getCustomerPrefix();
-      $contact['contact_persons'][$primaryIndex]['first_name'] = $order->getCustomerFirstname();
-      $contact['contact_persons'][$primaryIndex]['last_name'] = $order->getCustomerLastname();
-      $contact['contact_persons'][$primaryIndex]['email'] = $order->getCustomerEmail();
-    } catch (\Exception $ex) {
-      // No person updates as no primary person
+      try {
+        $primaryIndex = array_search(true, array_column($contact['contact_persons'], 'is_primary_contact'));
+        $contact['contact_persons'][$primaryIndex]['salutation'] = $order->getCustomerPrefix();
+        $contact['contact_persons'][$primaryIndex]['first_name'] = $order->getCustomerFirstname();
+        $contact['contact_persons'][$primaryIndex]['last_name'] = $order->getCustomerLastname();
+        $contact['contact_persons'][$primaryIndex]['email'] = $order->getCustomerEmail();
+      } catch (\Exception $ex) {
+        // No person updates as no primary person
+      }
+      $contact = $this->_zohoClient->updateContact($contact);
     }
 
-    return $this->_zohoClient->updateContact($contact);
+    return $contact;
   }
 
   public function getVatTreatment($order) {

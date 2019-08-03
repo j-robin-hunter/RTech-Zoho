@@ -35,7 +35,7 @@ class SalesOrderSaveAfter implements ObserverInterface {
       // Get the existing state of the order between Magento and Zoho
       $zohoSalesOrderManagement = $this->_zohoSalesOrderManagementRepository->getById($order->getId());
     } catch (NoSuchEntityException $e) {
-      // No record of the order so start be creating a Zoho estimate
+      // No record of the order so start by creating a Zoho estimate
       try {
         $zohoSalesOrderManagement = $this->_zohoOrderManagement->createEstimate($order);
       } catch (\Exception $e) {
