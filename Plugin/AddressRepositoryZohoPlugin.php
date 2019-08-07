@@ -7,6 +7,7 @@ namespace RTech\Zoho\Plugin;
 
 use RTech\Zoho\Webservice\Client\ZohoBooksClient;
 use RTech\Zoho\Api\Data\ZohoAddressInterface;
+use RTech\Zoho\Api\Data\ZohoCustomerInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 
 class AddressRepositoryZohoPlugin {
@@ -15,6 +16,7 @@ class AddressRepositoryZohoPlugin {
 
   protected $_zohoClient;
   protected $_zohoCustomerRepository;
+  protected $_zohoCustomerFactory;
   protected $_zohoAddressRepository;
   protected $_zohoAddressFactory;
   protected $_contactHelper;
@@ -28,6 +30,7 @@ class AddressRepositoryZohoPlugin {
     \Zend\Http\Client $zendClient,
     \Magento\Store\Model\StoreManagerInterface $storeManager,
     \RTech\Zoho\Model\ZohoCustomerRepository $zohoCustomerRepository,
+    \RTech\Zoho\Model\ZohoCustomerFactory $zohoCustomerFactory,
     \RTech\Zoho\Model\ZohoAddressRepository $zohoAddressRepository,
     \RTech\Zoho\Model\ZohoAddressFactory $zohoAddressFactory,
     \RTech\Zoho\Helper\ContactHelper $contactHelper,
@@ -39,6 +42,7 @@ class AddressRepositoryZohoPlugin {
     $this->_zohoClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
     $this->_zohoCustomerRepository = $zohoCustomerRepository;
     $this->_zohoAddressRepository = $zohoAddressRepository;
+    $this->_zohoCustomerFactory = $zohoCustomerFactory;
     $this->_zohoAddressFactory = $zohoAddressFactory;
     $this->_contactHelper = $contactHelper;
     $this->_searchCriteriaBuilder = $searchCriteriaBuilder;
@@ -65,7 +69,6 @@ class AddressRepositoryZohoPlugin {
   }
 
   private function updateZoho($address, $addBilling, $addShipping, $removeBilling, $removeShipping) {
-
     $customerId = $address->getCustomerId();
     $customer = $this->_customerRepository->getById($customerId);
     $contactName = $this->_contactHelper->getContactName(
@@ -76,7 +79,30 @@ class AddressRepositoryZohoPlugin {
       $customer->getSuffix()
     );
 
-    $zohoCustomerId = $this->_zohoCustomerRepository->getById($customerId)->getZohoId();
+    try {
+      $zohoCustomerId = $this->_zohoCustomerRepository->getById($customerId)->getZohoId();
+    } catch (NoSuchEntityException $ex) {
+      // It is possible to not find an entry in the zoho_customer table when
+      // a customer registers after placing an order. As such a customer must
+      // be looked up and linked if one is found
+      $contact = $this->_zohoClient->lookupContact(
+        $this->_contactHelper->getContactName(
+          $customer->getPrefix(),
+          $customer->getFirstname(),
+          $customer->getMiddlename(),
+          $customer->getLastname(),
+          $customer->getSuffix()
+        ),
+        $customer->getEmail());
+      $zohoCustomerId = $contact['contact_id'];
+      // Create entry in zoho_customer table
+      $zohoCustomer = $this->_zohoCustomerFactory->create();
+      $zohoCustomer->setData([
+        ZohoCustomerInterface::CUSTOMER_ID => $customer->getId(),
+        ZohoCustomerInterface::ZOHO_ID => $contact['contact_id']
+      ]);
+      $this->_zohoCustomerRepository->save($zohoCustomer);
+    }
 
     $zohoAddressArray = $this->_contactHelper->getAddressArray($address);
     $nullAddressArray = array_fill_keys(array_keys($zohoAddressArray), '');
