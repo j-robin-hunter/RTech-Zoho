@@ -6,6 +6,7 @@
 namespace RTech\Zoho\Observer;
 
 use RTech\Zoho\Webservice\Client\ZohoInventoryClient;
+use RTech\Zoho\Api\Data\ZohoInventoryInterface;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use RTech\Zoho\Webservice\Exception\ZohoItemExistsException;
@@ -117,10 +118,10 @@ class CatalogProductSaveAfter implements ObserverInterface {
         }
         $zohoInventory = $this->_zohoInventoryFactory->create();
         $zohoInventory->setData([
-          'product_id' => $product->getId(),
-          'product_name'=> $product->getName(),
-          'zoho_id' => $inventoryItem['item_id'],
-          'zoho_type' => self::ZOHO_ITEM
+          ZohoInventoryInterface::PRODUCT_ID => $product->getId(),
+          ZohoInventoryInterface::PRODUCT_NAME => $product->getName(),
+          ZohoInventoryInterface::ZOHO_ID => $inventoryItem['item_id'],
+          ZohoInventoryInterface::ZOHO_TYPE => self::ZOHO_ITEM
         ]);
         $this->_zohoInventoryRepository->save($zohoInventory);
       }
@@ -150,10 +151,10 @@ class CatalogProductSaveAfter implements ObserverInterface {
         $inventoryGroup = $this->_zohoClient->itemGroupAdd($group);
         $zohoInventory = $this->_zohoInventoryFactory->create();
         $zohoInventory->setData([
-          'product_id' => $product->getId(),
-          'product_name'=> $product->getName(),
-          'zoho_id' => $inventoryGroup['group_id'],
-          'zoho_type' => self::ZOHO_GROUP
+          ZohoInventoryInterface::PRODUCT_ID => $product->getId(),
+          ZohoInventoryInterface::PRODUCT_NAME => $product->getName(),
+          ZohoInventoryInterface::ZOHO_ID => $inventoryGroup['group_id'],
+          ZohoInventoryInterface::ZOHO_TYPE => self::ZOHO_GROUP
         ]);
         $this->_zohoInventoryRepository->save($zohoInventory);
       }

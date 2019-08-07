@@ -35,6 +35,9 @@
     <column xsi:type="boolean" name="billing" nullable="false" default="false" comment="Billing Address Type"/>
     <column xsi:type="boolean" name="shipping" nullable="false" default="false" comment="Shipping Address Type"/>
     <column xsi:type="varchar" name="zoho_address_id" nullable="false" length="32" comment="Zoho Address Id"/>
+    <constraint xsi:type="primary" referenceId="PRIMARY">
+      <column name="customer_address_id"/>
+    </constraint>
     <constraint xsi:type="foreign" referenceId="ZOHO_BOOKS_CUSTOMER_ADDRESS_ID_CUSTOMER_ADDRESS_ENTITY_ID"
                 table="zoho_address" column="customer_address_id" referenceTable="customer_address_entity"
                 referenceColumn="entity_id" onDelete="CASCADE"/>

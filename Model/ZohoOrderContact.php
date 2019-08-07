@@ -9,6 +9,7 @@ use RTech\Zoho\Api\Data\ZohoOrderContactInterface;
 use RTech\Zoho\Webservice\Client\ZohoBooksClient;
 use RTech\Zoho\Webservice\Exception\ZohoOperationException;
 use RTech\Zoho\Webservice\Exception\ZohoItemNotFoundException;
+use RTech\Zoho\Api\Data\ZohoCustomerInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 
 class ZohoOrderContact implements ZohoOrderContactInterface {
@@ -66,8 +67,8 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
         // Not a guest so create entry in zoho_customer table
         $zohoCustomer = $this->_zohoCustomerFactory->create();
         $zohoCustomer->setData([
-          'customer_id' => $order->getCustomerId(),
-          'zoho_id' => $contact['contact_id']
+          ZohoCustomerInterface::CUSTOMER_ID => $order->getCustomerId(),
+          ZohoCustomerInterface::ZOHO_ID => $contact['contact_id']
         ]);
         try {
           $this->_zohoCustomerRepository->save($zohoCustomer);

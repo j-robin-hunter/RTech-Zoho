@@ -91,34 +91,6 @@ class ContactHelper {
     return substr(trim($contactName), 0, 200);
   }
 
-  /*
-  public function updateAddresses($contact, $billingAddress, $shippingAddress, $groupId) {
-    $allowed = self::ALLOWED_ZOHO_KEYS;
-    $contact = array_filter($contact,
-      function ($key) use ($allowed) {
-        return in_array($key, $allowed);
-      }, ARRAY_FILTER_USE_KEY
-    );
-
-    $contact['billing_address'] = array_fill_keys(array_keys($contact['billing_address']), null);
-    $contact['shipping_address'] = array_fill_keys(array_keys($contact['shipping_address']), null);
-
-    if ($billingAddress) {
-      $contact['billing_address'] = $this->getAddressArray($billingAddress);
-      $vat = $this->vatBillingTreatment($billingAddress, $groupId);
-      $contact['company_name'] = isset($vat['company_name'])?$vat['company_name']:'';
-      $contact['vat_reg_no'] = isset($vat['vat_reg_no'])?$vat['vat_reg_no']:'';
-      $contact['vat_treatment'] = isset($vat['vat_treatment'])?$vat['vat_treatment']:'';
-      $contact['country_code'] = isset($vat['country_code'])?$vat['country_code']:'';
-    }
-    if ($shippingAddress) {
-      $contact['shipping_address'] = $this->getAddressArray($shippingAddress);
-    }
-    $contact['contact_name'] = empty($contact['company_name'])?$contact['contact_name']:$contact['company_name'];
-    return $contact;
-  }
-  */
-
   public function getAddressArray($address) {
     if (count($address->getStreet()) >= 2) {
       $street2 = $address->getStreet()[1]?:'';

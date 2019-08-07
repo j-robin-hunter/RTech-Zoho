@@ -37,7 +37,7 @@ class ZohoAddressRepository implements ZohoAddressRepositoryInterface {
   */
   public function getById($customerAddressId) {
     $zohoAddress = $this->zohoAddressFactory->create();
-    $response = $this->getResource()->load($zohoAddress, $customerAddressId);
+    $response = $zohoAddress->getResource()->load($zohoAddress, $customerAddressId);
     if (!$zohoAddress->getId()) {
       throw new NoSuchEntityException(__('No Zoho Books entry for address with id "%1" exists.', $customerAddressId));
     }

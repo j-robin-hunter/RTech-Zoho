@@ -7,7 +7,6 @@ namespace RTech\Zoho\Model\Config\Source;
 
 class CustomerGroups implements \Magento\Framework\Option\ArrayInterface{
   protected $_customerGroup;
-  protected $_categoryCollectionFactory;
 
   public function __construct(
     \Magento\Customer\Model\ResourceModel\Group\Collection $customerGroup

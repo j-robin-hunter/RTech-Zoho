@@ -6,6 +6,7 @@
 namespace RTech\Zoho\Plugin;
 
 use RTech\Zoho\Webservice\Client\ZohoInventoryClient;
+use RTech\Zoho\Api\Data\ZohoInventoryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 
 class ProductZohoIdPlugin {
@@ -48,10 +49,10 @@ class ProductZohoIdPlugin {
         if ($inventoryItem['name'] == $product->getName() && $inventoryItem['sku'] == $product->getSku()) {
           $zohoInventory = $this->zohoInventoryFactory->create();
           $zohoInventory->setData([
-            'product_id' => $product->getId(),
-            'product_name'=> $product->getName(),
-            'zoho_id' => $inventoryItem['item_id'],
-            'zoho_type' => in_array($product->getTypeId(), self::ITEM_TYPES) ? self::ZOHO_ITEM : self::ZOHO_GROUP
+            ZohoInventoryInterface::PRODUCT_ID => $product->getId(),
+            ZohoInventoryInterface::PRODUCT_NAME => $product->getName(),
+            ZohoInventoryInterface::ZOHO_ID => $inventoryItem['item_id'],
+            ZohoInventoryInterface::ZOHO_TYPE => in_array($product->getTypeId(), self::ITEM_TYPES) ? self::ZOHO_ITEM : self::ZOHO_GROUP
           ]);
           $this->zohoInventoryRepository->save($zohoInventory);
           $this->zohoClient->itemSetActive($inventoryItem['item_id']);

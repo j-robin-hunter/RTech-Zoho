@@ -6,6 +6,7 @@
 namespace RTech\Zoho\Model;
 
 use RTech\Zoho\Api\Data\ZohoOrderManagementInterface;
+use RTech\Zoho\Api\Data\ZohoSalesOrderManagementInterface;
 use RTech\Zoho\Webservice\Client\ZohoBooksClient;
 use Magento\Framework\Exception\NoSuchEntityException;
 
@@ -72,9 +73,9 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
 
     $zohoSalesOrderManagement = $this->_zohoSalesOrderManagementFactory->create();
     $zohoSalesOrderManagement->setData([
-      'order_id' => $order->getId(),
-      'zoho_id' => $contact['contact_id'],
-      'estimate_id' => $zohoEstimate['estimate_id']
+      ZohoSalesOrderManagementInterface::ORDER_ID => $order->getId(),
+      ZohoSalesOrderManagementInterface::ZOHO_ID => $contact['contact_id'],
+      ZohoSalesOrderManagementInterface::ESTIMATE_ID => $zohoEstimate['estimate_id']
     ]);
 
     return $this->_zohoSalesOrderManagementRepository->save($zohoSalesOrderManagement);

@@ -5,8 +5,9 @@
  */
 namespace RTech\Zoho\Plugin;
 
-use Magento\Framework\Exception\NoSuchEntityException;
 use RTech\Zoho\Webservice\Client\ZohoBooksClient;
+use RTech\Zoho\Api\Data\ZohoAddressInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
 
 class AddressRepositoryZohoPlugin {
   const BILLING = 0;
@@ -192,11 +193,11 @@ class AddressRepositoryZohoPlugin {
   private function saveZohoAddress($customerAddressId, $customerId, $billing, $shipping, $zohoAddressId) {
     $zohoAddress = $this->_zohoAddressFactory->create();
     $zohoAddress->setData([
-      'customer_address_id' => $customerAddressId,
-      'customer_id' => $customerId,
-      'billing' => $billing,
-      'shipping' => $shipping,
-      'zoho_address_id' => $zohoAddressId
+      ZohoAddressInterface::CUSTOMER_ADDRESS_ID => $customerAddressId,
+      ZohoAddressInterface::CUSTOMER_ID => $customerId,
+      ZohoAddressInterface::BILLING => $billing,
+      ZohoAddressInterface::SHIPPING => $shipping,
+      ZohoAddressInterface::ZOHO_ADDRESS_ID => $zohoAddressId
     ]);
     $this->_zohoAddressRepository->save($zohoAddress);
   }
