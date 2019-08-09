@@ -139,11 +139,22 @@ class CatalogProductSaveAfter implements ObserverInterface {
       if (isset($zohoItemId)) {
 
         // EXISTING PARENT PRODUCTS
-        $inventoryGroup = $this->_zohoClient->getItemGroup($zohoItemId);
-        $inventoryGroup = $this->getGroupArray($product, $inventoryGroup);
-        $inventoryGroup = $this->_zohoClient->itemGroupUpdate($inventoryGroup);
-        if ($zohoInventory->getProductName() != $product->getName()) {
-          $zohoInventory->setProductName($product->getName());
+        try {
+          $inventoryGroup = $this->_zohoClient->getItemGroup($zohoItemId);
+          $inventoryGroup = $this->getGroupArray($product, $inventoryGroup);
+          $inventoryGroup = $this->_zohoClient->itemGroupUpdate($inventoryGroup);
+          if ($zohoInventory->getProductName() != $product->getName()) {
+            $zohoInventory->setProductName($product->getName());
+            $this->_zohoInventoryRepository->save($zohoInventory);
+          }
+        } catch (ZohoItemNotFoundException $ex) {
+          // If all of the items are removed from a Zoho Item Group
+          // the Item Group will be deleted. As such the entire Item Group
+          // will need to be be creatred, and the existing zoho_inventory will
+          // need to be updated
+          $group = $this->getGroupArray($product);
+          $inventoryGroup = $this->_zohoClient->itemGroupAdd($group);
+          $zohoInventory->setZohoId($inventoryGroup['group_id']);
           $this->_zohoInventoryRepository->save($zohoInventory);
         }
       } else {
