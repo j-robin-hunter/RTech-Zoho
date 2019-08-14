@@ -193,6 +193,9 @@ class CatalogProductSaveAfter implements ObserverInterface {
     } catch (\Exception $e) {
       // Just in case 'manage_stock' array index is not set in product stock data
     }
+    $manufacturer = $product->getResource()->getAttribute('manufacturer');
+    $salesOrderDescription =  $product->getResource()->getAttribute('sales_order_description');
+    $purchaseOrderDescription = $product->getResource()->getAttribute('purchase_order_description');
     $item = array_merge($item, [
       'name' => $product->getName(),
       'sku' => $product->getSku(),
@@ -203,7 +206,9 @@ class CatalogProductSaveAfter implements ObserverInterface {
         'height' => $product->getData('ts_dimensions_height')?:'',
         'weight' => $product->getData('weight')?:''
       ],
-      'manufacturer' => $product->getResource()->getAttribute('manufacturer')->getFrontend()->getValue($product)?:'',
+      'manufacturer' => $manufacturer ? $manufacturer->getFrontend()->getValue($product) : '',
+      'description' => $salesOrderDescription ? $salesOrderDescription->getFrontend()->getValue($product) : '',
+      'purchase_description' => $purchaseOrderDescription ? $purchaseOrderDescription->getFrontend()->getValue($product) : '',
       'rate' => $product->getData('price'),
       'is_returnable' => true,
       'tax_id' => $tax['tax_id']?:''
