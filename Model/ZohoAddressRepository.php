@@ -61,11 +61,10 @@ class ZohoAddressRepository implements ZohoAddressRepositoryInterface {
   */
   public function delete($zohoAddress) {
     try {
-      $zohoAddress->getResource()->delete($zohoAddress);
+      return $zohoAddress->getResource()->delete($zohoAddress);
     } catch (\Exception $exception) {
       throw new CouldNotDeleteException(__($exception->getMessage()));
     }
-    return $zohoAddress;
   }
 
   /**
