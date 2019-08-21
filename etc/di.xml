@@ -13,11 +13,9 @@
   <preference for="RTech\Zoho\Faq\Api\ZohoCustomerRepositoryInterface" type="RTech\Zoho\Model\ZohoCustomerRepository" />
 
   <preference for="RTech\Zoho\Api\Data\ZohoAddressInterface" type="RTech\Zoho\Model\ZohoAddress" />
-  <preference for="RTech\Zoho\Faq\Api\ZohoAddressRepositoryInterface" type="RTech\Zoho\Model\ZohoAdddressRepository" />
   <preference for="RTech\Zoho\Api\Data\ZohoAddressSearchResultsInterface" type="RTech\Zoho\Model\ZohoAddressSearchResults"/>
 
   <preference for="RTech\Zoho\Api\Data\ZohoSalesOrderManagementInterface" type="RTech\Zoho\Model\ZohoSalesOrderManagement" />
-  <preference for="RTech\Zoho\Faq\Api\ZohoCustomerRepositoryInterface" type="RTech\Zoho\Model\ZohoSalesOrderManagementRepository" />
 
   <preference for="RTech\Zoho\Api\Data\ZohoCustomerContactInterface" type="RTech\Zoho\Model\ZohoCustomerContact" />
   <preference for="RTech\Zoho\Api\Data\ZohoOrderContactInterface" type="RTech\Zoho\Model\ZohoOrderContact" />
