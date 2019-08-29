@@ -24,6 +24,14 @@ interface ZohoInventoryClientInterface {
   public function itemGroupAdd($itemGroup);
 
   /**
+  * Add a composite item to Zoho Inventory
+  *
+  * @param array $compositeItem
+  * @return array
+  */
+  public function itemCompositeAdd($compositeItem);
+
+  /**
   * Add an image to a Zoho Inventory item
   *
   * @param int $itemId
@@ -75,6 +83,22 @@ interface ZohoInventoryClientInterface {
   public function getItemGroupByName($groupName);
 
   /**
+  * Get a Zoho Inventory composite item
+  *
+  * @param int $compositeItemId
+  * @return array
+  */
+  public function getCompositeItem($compositeItemId);
+
+  /**
+  * Get a Zoho Inventory composite item by name
+  *
+  * @param string $compositeName
+  * @return array
+  */
+  public function getCompositeItemByName($compositeName);
+
+  /**
   * Get a Zoho Inventory sales order
   *
   * @param string $salesOrderId
@@ -97,6 +121,14 @@ interface ZohoInventoryClientInterface {
   * @return array
   */
   public function itemGroupUpdate($itemGroup);
+
+  /**
+  * Update a Zoho Inventory composite item
+  *
+  * @param array $compositeItem
+  * @return array
+  */
+  public function itemCompositeUpdate($compositeItem);
 
   /**
   * Delete a Zoho Inventory item
@@ -135,11 +167,11 @@ interface ZohoInventoryClientInterface {
   public function itemSetInactive($itemId);
 
   /**
-  * Delete a Zoho Inventory item
+  * Delete a Zoho Inventory item group
   *
-  * @param int $itemId
+  * @param int $groupId
   */
-  public function itemGroupDelete($itemGroup);
+  public function itemGroupDelete($groupId);
 
   /**
   * Mark a Zoho Inventory group as active
@@ -154,6 +186,27 @@ interface ZohoInventoryClientInterface {
   * @param int $groupId
   */
   public function itemGroupSetInactive($groupId);
+
+  /**
+  * Delete a Zoho Inventory composite item
+  *
+  * @param int $compositeItemId
+  */
+  public function itemCompositeDelete($compositeItemId);
+
+  /**
+  * Mark a Zoho Inventory composite item active
+  *
+  * @param int $compositeItemId
+  */
+  public function itemCompositeSetActive($compositeItemId);
+
+  /**
+  * Mark a Zoho Inventory composite item as inactive
+  *
+  * @param int $compositeItemId
+  */
+  public function itemCompositeSetInactive($compositeItemId);
 
   /**
   * Delete a Zoho Inventory item image

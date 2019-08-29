@@ -15,10 +15,17 @@ use RTech\Zoho\Webservice\Exception\ZohoItemNotFoundException;
 class CatalogProductSaveAfter implements ObserverInterface {
   const ENABLED = 1;
   const DISABLED = 2;
-  const ITEM_TYPES = array('simple', 'virtual', 'downloadable');
-  const GROUP_TYPES = array('configurable', 'grouped', 'bundle');
+  const SIMPLE_TYPE = 'simple';
+  const VIRTUAL_TYPE = 'virtual';
+  const DOWNLOADABLE_TYPE = 'downloadable';
+  const CONFIGURABLE_TYPE = 'configurable';
+  const GROUP_TYPE= 'grouped';
+  const BUNDLE_TYPE = 'bundle';
+  const ITEM_TYPES = array(self::SIMPLE_TYPE, self::VIRTUAL_TYPE, self::DOWNLOADABLE_TYPE);
+  const GROUP_TYPES = array(self::CONFIGURABLE_TYPE, self::GROUP_TYPE, self::BUNDLE_TYPE);
   const ZOHO_ITEM = 'item';
   const ZOHO_GROUP = 'group';
+  const ZOHO_COMPOSITE = 'composite';
   const MANAGE_SOCK = 1;
 
   protected $_zohoClient;
@@ -54,6 +61,7 @@ class CatalogProductSaveAfter implements ObserverInterface {
 
   public function execute(\Magento\Framework\Event\Observer $observer) {
     $product = $observer->getProduct();
+
     try {
       $zohoInventory = $this->_zohoInventoryRepository->getById($product->getId());
       $zohoItemId = $zohoInventory->getZohoId();
@@ -78,10 +86,10 @@ class CatalogProductSaveAfter implements ObserverInterface {
           $item = $this->getItemArray($product, []);
           $inventoryItem = $this->_zohoClient->itemAdd($item);
           $zohoInventory->setData([
-            'product_id' => $product->getId(),
-            'product_name'=> $product->getName(),
-            'zoho_id' => $inventoryItem['item_id'],
-            'zoho_type' => self::ZOHO_ITEM
+            ZohoInventoryInterface::PRODUCT_ID => $product->getId(),
+            ZohoInventoryInterface::PRODUCT_NAME => $product->getName(),
+            ZohoInventoryInterface::ZOHO_ID => $inventoryItem['item_id'],
+            ZohoInventoryInterface::ZOHO_TYPE => self::ZOHO_ITEM
           ]);
           $this->_zohoInventoryRepository->save($zohoInventory);
         }
@@ -139,35 +147,72 @@ class CatalogProductSaveAfter implements ObserverInterface {
       if (isset($zohoItemId)) {
 
         // EXISTING PARENT PRODUCTS
-        try {
-          $inventoryGroup = $this->_zohoClient->getItemGroup($zohoItemId);
-          $inventoryGroup = $this->getGroupArray($product, $inventoryGroup);
-          $inventoryGroup = $this->_zohoClient->itemGroupUpdate($inventoryGroup);
-          if ($zohoInventory->getProductName() != $product->getName()) {
-            $zohoInventory->setProductName($product->getName());
+        if ($product->getTypeId() == self::BUNDLE_TYPE) {
+          try {
+            $inventoryComposite = $this->_zohoClient->getCompositeItem($zohoItemId);
+            $bundle = $this->getBundleArray($product, $inventoryComposite);
+            $inventoryComposite = $this->_zohoClient->itemCompositeUpdate($bundle);
+            if ($zohoInventory->getProductName() != $product->getName()) {
+              $zohoInventory->setProductName($product->getName());
+              $this->_zohoInventoryRepository->save($zohoInventory);
+            }
+          } catch (ZohoItemNotFoundException $ex) {
+            // Compiste item has been deleted from or does not exists in Zoho Inventory
+            // Recreate item from current product entry
+            $bundle = $this->getBundleArray($product);
+            $inventoryComposite = $this->_zohoClient->itemCompositeAdd($bundle);
+            $zohoInventory->setData([
+              ZohoInventoryInterface::PRODUCT_ID => $product->getId(),
+              ZohoInventoryInterface::PRODUCT_NAME => $product->getName(),
+              ZohoInventoryInterface::ZOHO_ID => $inventoryComposite['composite_item_id'],
+              ZohoInventoryInterface::ZOHO_TYPE => self::ZOHO_COMPOSITE
+            ]);
             $this->_zohoInventoryRepository->save($zohoInventory);
           }
-        } catch (ZohoItemNotFoundException $ex) {
-          // If all of the items are removed from a Zoho Item Group
-          // the Item Group will be deleted. As such the entire Item Group
-          // will need to be be creatred, and the existing zoho_inventory will
-          // need to be updated
-          $group = $this->getGroupArray($product);
-          $inventoryGroup = $this->_zohoClient->itemGroupAdd($group);
-          $zohoInventory->setZohoId($inventoryGroup['group_id']);
-          $this->_zohoInventoryRepository->save($zohoInventory);
+        } else {
+          try {
+            $inventoryGroup = $this->_zohoClient->getItemGroup($zohoItemId);
+            $inventoryGroup = $this->getGroupArray($product, $inventoryGroup);
+            $inventoryGroup = $this->_zohoClient->itemGroupUpdate($inventoryGroup);
+            if ($zohoInventory->getProductName() != $product->getName()) {
+              $zohoInventory->setProductName($product->getName());
+              $this->_zohoInventoryRepository->save($zohoInventory);
+            }
+          } catch (ZohoItemNotFoundException $ex) {
+            // If all of the items are removed from a Zoho Item Group
+            // the Item Group will be deleted. As such the entire Item Group
+            // will need to be be creatred, and the existing zoho_inventory will
+            // need to be updated
+            $group = $this->getGroupArray($product);
+            $inventoryGroup = $this->_zohoClient->itemGroupAdd($group);
+            $zohoInventory->setZohoId($inventoryGroup['group_id']);
+            $this->_zohoInventoryRepository->save($zohoInventory);
+          }
         }
       } else {
-        $group = $this->getGroupArray($product);
-        $inventoryGroup = $this->_zohoClient->itemGroupAdd($group);
-        $zohoInventory = $this->_zohoInventoryFactory->create();
-        $zohoInventory->setData([
-          ZohoInventoryInterface::PRODUCT_ID => $product->getId(),
-          ZohoInventoryInterface::PRODUCT_NAME => $product->getName(),
-          ZohoInventoryInterface::ZOHO_ID => $inventoryGroup['group_id'],
-          ZohoInventoryInterface::ZOHO_TYPE => self::ZOHO_GROUP
-        ]);
-        $this->_zohoInventoryRepository->save($zohoInventory);
+        if ($product->getTypeId() == self::BUNDLE_TYPE) {
+          $bundle = $this->getBundleArray($product);
+          $inventoryComposite = $this->_zohoClient->itemCompositeAdd($bundle);
+          $zohoInventory = $this->_zohoInventoryFactory->create();
+          $zohoInventory->setData([
+            ZohoInventoryInterface::PRODUCT_ID => $product->getId(),
+            ZohoInventoryInterface::PRODUCT_NAME => $product->getName(),
+            ZohoInventoryInterface::ZOHO_ID => $inventoryComposite['composite_item_id'],
+            ZohoInventoryInterface::ZOHO_TYPE => self::ZOHO_COMPOSITE
+          ]);
+          $this->_zohoInventoryRepository->save($zohoInventory);
+        } else {
+          $group = $this->getGroupArray($product);
+          $inventoryGroup = $this->_zohoClient->itemGroupAdd($group);
+          $zohoInventory = $this->_zohoInventoryFactory->create();
+          $zohoInventory->setData([
+            ZohoInventoryInterface::PRODUCT_ID => $product->getId(),
+            ZohoInventoryInterface::PRODUCT_NAME => $product->getName(),
+            ZohoInventoryInterface::ZOHO_ID => $inventoryGroup['group_id'],
+            ZohoInventoryInterface::ZOHO_TYPE => self::ZOHO_GROUP
+          ]);
+          $this->_zohoInventoryRepository->save($zohoInventory);
+        }
       }
     }
   }
@@ -267,6 +312,62 @@ class CatalogProductSaveAfter implements ObserverInterface {
     }
 
     return $group;
+  }
+
+  protected function getBundleArray($product, $compositeItem=null) {
+    $taxes = $this->_zohoClient->getTaxes();
+    $tax = $taxes[
+      array_search(
+        $this->_productTax->getAllOptions()[
+          array_search($product->getData('tax_class_id'), array_column($this->_productTax->getAllOptions(), 'value'))
+        ]['label'],
+        array_column($taxes, 'tax_name')
+      )
+    ];
+
+    $salesOrderDescription =  $product->getResource()->getAttribute('sales_order_description');
+    $purchaseOrderDescription = $product->getResource()->getAttribute('purchase_order_description');
+
+    $bundle = array(
+      'name' => $product->getName(),
+      'sku' => $product->getSku(),
+      'unit' => 'each',
+      'rate' => $product->getData('price'),
+      'tax_id' => $tax['tax_id']?:'',
+      'is_combo_product' => true,
+      'item_type' => 'inventory',
+      'is_returnable' => true,
+      'description' => $salesOrderDescription ? $salesOrderDescription->getFrontend()->getValue($product) : '',
+      'purchase_description' => $purchaseOrderDescription ? $purchaseOrderDescription->getFrontend()->getValue($product) : ''
+    );
+
+    $selectionCollection = $product->getTypeInstance(true)
+	        ->getSelectionsCollection($product->getTypeInstance(true)->getOptionsIds($product), $product);
+    foreach ($selectionCollection as $child) {
+      $zohoInventory = $this->_zohoInventoryRepository->getById($child->getProductId());
+
+      if (!$zohoInventory->getId()) {
+        // No Zoho Inventory cross reference so retrieve from Zoho Inventory by name
+        $inventoryChild= $this->_zohoClient->getItemByName($child->getName());
+        $zohoInventory->setData([
+          'product_id' => $child->getProductId(),
+          'product_name'=>  $child->getName(),
+          'zoho_id' => $inventoryChild['item_id'],
+          'zoho_type' => self::ZOHO_ITEM
+        ]);
+        $this->_zohoInventoryRepository->save($zohoInventory);
+      }
+      $item = array(
+        'item_id' => $zohoInventory->getZohoId(),
+        'quantity' => $child->getSelectionQty()
+      );
+      $bundle['mapped_items'][] = $item;
+    }
+
+    if ($compositeItem) {
+      $bundle['composite_item_id'] = $compositeItem['composite_item_id'];
+    }
+    return $bundle;
   }
 
   private function setInventoryImage($product, $inventoryItem) {

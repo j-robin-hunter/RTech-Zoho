@@ -14,6 +14,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 class CatalogProductDeleteBefore implements ObserverInterface {
   const ZOHO_ITEM = 'item';
   const ZOHO_GROUP = 'group';
+  const ZOHO_COMPOSITE = 'composite';
 
   protected $_zohoClient;
   protected $_zohoInventoryRepository;
@@ -47,6 +48,20 @@ class CatalogProductDeleteBefore implements ObserverInterface {
           // Item is in use in a transaction so mark as inactive and ungroup
           $this->_zohoClient->itemSetInactive($zohoInventory->getZohoId());
           $this->_zohoClient->itemUngroup($zohoInventory->getZohoId());
+          $this->_messageManager->addNotice('Zoho inventory item "' . $zohoInventory->getProductName() . '" set to inactive');
+        } catch (ZohoItemNotFoundException $e) {
+          $this->_messageManager->addNotice('Zoho inventory item for "' . $zohoInventory->getProductName() . '" not found');
+        }
+      } elseif ($zohoInventory->getZohoType() == self::ZOHO_COMPOSITE) {
+
+        //******************
+        // **** BUNDLES ****
+        //******************
+        try {
+          $this->_zohoClient->itemCompositeDelete($zohoInventory->getZohoId());
+        } catch (ZohoOperationException $e) {
+          // Item is in use in a transaction so mark as inactive
+          $this->_zohoClient->itemCompositeInactive($zohoInventory->getZohoId());
           $this->_messageManager->addNotice('Zoho inventory item "' . $zohoInventory->getProductName() . '" set to inactive');
         } catch (ZohoItemNotFoundException $e) {
           $this->_messageManager->addNotice('Zoho inventory item for "' . $zohoInventory->getProductName() . '" not found');

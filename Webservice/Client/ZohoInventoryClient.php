@@ -43,6 +43,13 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   /**
   * @inheritdoc
   */
+  public function itemCompositeAdd($compositeItem) {
+    return $this->callZoho(self::ITEM_COMPOSITE_API, self::POST, ['JSONString' => json_encode($compositeItem, true)])['composite_item'];
+  }
+
+  /**
+  * @inheritdoc
+  */
   public function imageAdd($itemId, $imageFile) {
     return $this->callZoho(self::ITEMS_API . '/' . $itemId . '/image', self::POST, [], $imageFile);
   }
@@ -99,6 +106,21 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   /**
   * @inheritdoc
   */
+  public function getCompositeItem($compositeItemId) {
+    return $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItemId, self::GET, [])['composite_item'];
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function getCompositeItemByName($compositeName) {
+    $response = $this->callZoho(self::ITEM_COMPOSITE_API, self::GET, ['name' => $compositeName]);
+    return count($response['composite_items']) == 1 ? $response['composite_items'][0] : null;
+  }
+
+  /**
+  * @inheritdoc
+  */
   public function getSalesOrder($salesOrderId) {
     return $this->callZoho(self::SALESORDERS_API . '/' . $salesOrderId, self::GET, [])['salesorder'];
   }
@@ -116,6 +138,13 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   */
   public function itemGroupUpdate($itemGroup) {
     $this->callZoho(self::ITEM_GROUPS_API . '/' . $itemGroup['group_id'], self::PUT, ['JSONString' => json_encode($itemGroup, true)]);
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function itemCompositeUpdate($compositeItem) {
+    $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItem['composite_item_id'], self::PUT, ['JSONString' => json_encode($compositeItem, true)]);
   }
 
   /**
@@ -156,8 +185,8 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   /**
   * @inheritdoc
   */
-  public function itemGroupDelete($itemGroupId) {
-    $this->callZoho(self::ITEM_GROUPS_API . '/' . $itemGroupId, self::DELETE, []);
+  public function itemGroupDelete($groupId) {
+    $this->callZoho(self::ITEM_GROUPS_API . '/' . $groupId, self::DELETE, []);
   }
 
   /**
@@ -172,6 +201,28 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   */
   public function itemGroupSetInactive($groupId) {
     $this->callZoho(self::ITEM_GROUPS_API . '/' . $groupId . '/inactive', self::POST, []);
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function itemCompositeDelete($compositeItem) {
+    $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItem, self::DELETE, []);
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function itemCompositeSetActive($compositeItemId) {
+    $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItemId . '/active', self::POST, []);
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function itemCompositeSetInactive($compositeItemId) {
+    $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItemId . '/inactive', self::POST, []);
+
   }
 
   /**
