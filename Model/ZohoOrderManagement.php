@@ -50,7 +50,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   * @inheritdoc
   */
   public function createEstimate($order) {
-
     $contact = $this->_zohoOrderContact->getContactForOrder($order);
     $contact = $this->_zohoOrderContact->updateOrderContact($contact, $order);
 
@@ -157,24 +156,28 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   }
 
   private function createLineitems($order) {
-
     $taxes = $this->_zohoClient->getTaxes();
     $zeroRate = $taxes[array_search(0, array_column($taxes, 'tax_percentage'))]['tax_id'];
     $euVat = $this->_zohoOrderContact->getVatTreatment($order) == 'eu_vat_registered' ? true : false;
 
     $lineItems = array();
     foreach ($order->getAllItems() as $item) {
-      $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
-      $lineitem = [
-        'item_id' => $zohoInventory->getZohoId(),
-        'quantity' => $item->getQtyOrdered(),
-        'rate' => $item->getPrice(),
-        'discount' => sprintf('%01.2f%%', $item->getDiscountPercent())
-      ];
-      if ($euVat == true) {
-        $lineitem['tax_id'] = $zeroRate;
+      if ($item->getProductType() != 'configurable') {
+        $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
+        $quantity = $item->getQtyOrdered();
+        // If this is a child we now need the parent to get the price etc.
+        $item = $item->getParentItem() ?: $item;
+        $lineitem = [
+          'item_id' => $zohoInventory->getZohoId(),
+          'quantity' => $quantity,
+          'rate' => $item->getPrice(),
+          'discount' => sprintf('%01.2f%%', $item->getDiscountPercent())
+        ];
+        if ($euVat == true) {
+          $lineitem['tax_id'] = $zeroRate;
+        }
+        $lineitems[] = $lineitem;
       }
-      $lineitems[] = $lineitem;
     }
     $shipping = [
       'item_id' => $this->_zohoShippingSkuId,
