@@ -74,7 +74,7 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
         'salesorder_id' => $package['salesorder_id'],
         'package_ids' => $package['package_id'],
         'JSONString' => json_encode($shipment, true)
-      ])['shipment_order'];
+      ])['shipmentorder'];
     } catch (\Exception $e) {
       throw new $e;
     }
