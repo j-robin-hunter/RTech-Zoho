@@ -40,7 +40,6 @@ class SalesOrderShipmentSaveBefore implements ObserverInterface {
         $this->_stockRegistry->updateStockItemBySku($sku, $stockItem);
       }
     }
-    bust;
   }
 
 }
