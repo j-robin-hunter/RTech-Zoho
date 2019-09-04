@@ -255,7 +255,7 @@ class CatalogProductSaveAfter implements ObserverInterface {
       'description' => $salesOrderDescription ? $salesOrderDescription->getFrontend()->getValue($product) : '',
       'purchase_description' => $purchaseOrderDescription ? $purchaseOrderDescription->getFrontend()->getValue($product) : '',
       'rate' => $product->getData('price'),
-      'is_returnable' => true,
+      'is_returnable' => empty($product->getIsVirtual()) ? true : false,
       'tax_id' => $tax['tax_id']?:''
     ]);
     return $item;
