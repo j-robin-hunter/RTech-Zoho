@@ -20,6 +20,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   protected $_stockRegistry;
   protected $_zohoSalesOrderManagementRepository;
   protected $_zohoSalesOrderManagementFactory;
+  protected $_customerSession;
+  protected $_termsRepository;
 
   public function __construct(
     \RTech\Zoho\Helper\ConfigData $configData,
@@ -30,7 +32,9 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     \Magento\Catalog\Model\ProductRepository $productRepository,
     \Magento\CatalogInventory\Api\StockRegistryInterface $stockRegistry,
     \RTech\Zoho\Model\ZohoSalesOrderManagementRepository $zohoSalesOrderManagementRepository,
-    \RTech\Zoho\Model\ZohoSalesOrderManagementFactory $zohoSalesOrderManagementFactory
+    \RTech\Zoho\Model\ZohoSalesOrderManagementFactory $zohoSalesOrderManagementFactory,
+    \Magento\Customer\Model\Session $customerSession,
+    \RTech\Payment\Model\TermsRepository $termsRepository
   ) {
     $this->_zohoClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
     $this->_zohoInventoryRepository = $zohoInventoryRepository;
@@ -44,6 +48,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $this->_stockRegistry = $stockRegistry;
     $this->_zohoSalesOrderManagementRepository = $zohoSalesOrderManagementRepository;
     $this->_zohoSalesOrderManagementFactory = $zohoSalesOrderManagementFactory;
+    $this->_customerSession = $customerSession;
+    $this->_termsRepository = $termsRepository;
   }
 
   /**
@@ -59,6 +65,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'expiry_date' => date('Y-m-d', strtotime($order->getCreatedAt() . ' + ' . $this->_quoteValidity . 'days')),
       'is_inclusive_tax' => false
     ];
+
+    $this->addTerms($estimate);
 
     if ($order->getStatusHistories()) {
       $histories = $order->getStatusHistories();
@@ -98,6 +106,9 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'reference_number' => sprintf('web-%06d', $order->getIncrementId()),
       'is_inclusive_tax' => false
     ];
+
+    $this->addTerms($salesOrder);
+
     if ($order->getStatusHistories()) {
       $histories = $order->getStatusHistories();
       $salesOrder['notes'] = array_pop($histories)->getComment();
@@ -138,6 +149,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'reference_number' => sprintf('web-%06d', $order->getIncrementId()),
       'notes' => $comments
     ];
+
+    $this->addTerms($invoice);
 
     $zohoInvoice = $this->_zohoClient->updateInvoice($zohoInvoice['invoice_id'], $invoice);
     $this->_zohoClient->markInvoiceSent($zohoInvoice['invoice_id']);
@@ -189,5 +202,15 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     }
     $lineitems[] = $shipping;
     return $lineitems;
+  }
+
+  private function addTerms(&$payload) {
+    if ($this->_customerSession->isLoggedIn()) {
+      $customer = $this->_customerSession->getCustomer()->getDataModel();
+      $hasTerms = $customer->getCustomAttribute('payment_terms');
+      if ($hasTerms) {
+        $payload['terms'] = $this->_termsRepository->getById($hasTerms->getValue())->getTerms();
+      }
+    }
   }
 }
