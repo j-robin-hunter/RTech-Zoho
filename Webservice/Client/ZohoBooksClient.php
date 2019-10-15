@@ -80,6 +80,13 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   /**
   * @inheritdoc
   */
+  public function updateEstimate($estimateId, $estimate) {
+    return $this->callZoho(self::ESTIMATES_API .'/' . $estimateId, self::PUT, ['JSONString' => json_encode($estimate, true)])['estimate'];
+  }
+
+  /**
+  * @inheritdoc
+  */
   public function markEstimateSent($estimateId) {
     $this->callZoho(self::ESTIMATES_API .'/' . $estimateId . '/status/sent', self::POST, []);
   }

@@ -55,7 +55,25 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   /**
   * @inheritdoc
   */
-  public function createEstimate($order) {
+  public function quoteEstimate($contactId, $quote, $shippingAmount) {
+    $estimate = [
+      'customer_id' => $contactId,
+      'reference_number' => sprintf('wqt-%06d', $quote->getId()),
+      'expiry_date' => date('Y-m-d', strtotime($quote->getUpdatedAt() . ' + ' . $this->_quoteValidity . 'days')),
+      'is_inclusive_tax' => false
+    ];
+    $this->addTerms($estimate);
+    $estimate['line_items'] = $this->createLineitems($quote, $shippingAmount);
+    $zohoEstimate = $this->_zohoClient->addEstimate($estimate);
+    $this->_zohoClient->markEstimateSent($zohoEstimate['estimate_id']);
+
+    return $zohoEstimate;
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function orderEstimate($order) {
     $contact = $this->_zohoOrderContact->getContactForOrder($order);
     $contact = $this->_zohoOrderContact->updateOrderContact($contact, $order);
 
@@ -73,7 +91,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       $estimate['notes'] = array_pop($histories)->getComment();
     }
 
-    $estimate['line_items'] = $this->createLineitems($order);
+    $estimate['line_items'] = $this->createLineitems($order, $order->getBaseShippingAmount());
 
     $zohoEstimate = $this->_zohoClient->addEstimate($estimate);
     $this->_zohoClient->markEstimateSent($zohoEstimate['estimate_id']);
@@ -91,6 +109,20 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   /**
   * @inheritdoc
   */
+  public function updateEstimate($estimateId, $contactId, $source, $shippingAmount) {
+    $estimate = [
+      'customer_id' => $contactId
+    ];
+    $this->addTerms($estimate);
+    $estimate['line_items'] = $this->createLineitems($source, $shippingAmount);
+    $zohoEstimate = $this->_zohoClient->updateEstimate($estimateId, $estimate);
+
+    return $zohoEstimate;
+  }
+
+  /**
+  * @inheritdoc
+  */
   public function acceptEstimate($zohoSalesOrderManagement) {
     $estimateId = $zohoSalesOrderManagement->getEstimateId();
     $this->_zohoClient->markEstimateAccepted($estimateId);
@@ -99,11 +131,10 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   /**
   * @inheritdoc
   */
-  public function createSalesOrder($zohoSalesOrderManagement, $order) {
-
+  public function createSalesOrder($zohoSalesOrderManagement, $order, $ref) {
     $salesOrder = [
       'customer_id' => $zohoSalesOrderManagement->getZohoId(),
-      'reference_number' => sprintf('web-%06d', $order->getIncrementId()),
+      'reference_number' => $ref ? : sprintf('web-%06d', $order->getIncrementId()),
       'is_inclusive_tax' => false
     ];
 
@@ -113,7 +144,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       $histories = $order->getStatusHistories();
       $salesOrder['notes'] = array_pop($histories)->getComment();
     }
-    $salesOrder['line_items'] = $this->createLineitems($order);
+    $salesOrder['line_items'] = $this->createLineitems($order, $order->getBaseShippingAmount());
 
     $zohoSalesOrder = $this->_zohoClient->addSalesOrder($salesOrder);
 
@@ -139,8 +170,10 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     // Update invoice to set reference number and notes
     $comments = '';
     foreach($order->getInvoiceCollection() as $invoice) {
-      foreach ($invoice->getComments() as $comment) {
-        $comments = strlen($comments) > 0 ? '\r\n\r\n' . $comment->getComment() : $comment->getComment();
+      if ($invoice->getComments()) {
+        foreach ($invoice->getComments() as $comment) {
+          $comments = strlen($comments) > 0 ? '\r\n\r\n' . $comment->getComment() : $comment->getComment();
+        }
       }
     }
 
@@ -168,13 +201,13 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $this->_zohoClient->deleteEstimate($zohoSalesOrderManagement->getEstimateId());
   }
 
-  private function createLineitems($order) {
+  private function createLineitems($items, $shippingAmount) {
     $taxes = $this->_zohoClient->getTaxes();
     $zeroRate = $taxes[array_search(0, array_column($taxes, 'tax_percentage'))]['tax_id'];
-    $euVat = $this->_zohoOrderContact->getVatTreatment($order) == 'eu_vat_registered' ? true : false;
+    $euVat = $this->_zohoOrderContact->getVatTreatment($items) == 'eu_vat_registered' ? true : false;
 
     $lineItems = array();
-    foreach ($order->getAllItems() as $item) {
+    foreach ($items->getAllItems() as $item) {
       if ($item->getProductType() != 'configurable') {
         $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
         $quantity = $item->getQtyOrdered();
@@ -195,7 +228,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $shipping = [
       'item_id' => $this->_zohoShippingSkuId,
       'quantity' => 1,
-      'rate' => $order->getBaseShippingAmount()
+      'rate' => $shippingAmount
     ];
     if ($euVat == true) {
       $shipping['tax_id'] = $zeroRate;

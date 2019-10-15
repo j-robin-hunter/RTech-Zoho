@@ -63,6 +63,15 @@ interface ZohoBooksClientInterface {
   public function addEstimate($estimate);
 
   /**
+  * Update a Zoho Books estimate
+  *
+  * @param string $estimateId
+  * @param array $estimate
+  * @return array
+  */
+  public function updateEstimate($estimateId, $estimate);
+
+  /**
   * Mark an estimate in Zoho Books as sent
   *
   * @param string $estimateId
