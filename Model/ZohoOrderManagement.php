@@ -210,7 +210,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     foreach ($items->getAllItems() as $item) {
       if ($item->getProductType() != 'configurable') {
         $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
-        $quantity = $item->getQtyOrdered();
+        $quantity = $item->getQty();
         // If this is a child we now need the parent to get the price etc.
         $item = $item->getParentItem() ?: $item;
         $lineitem = [
