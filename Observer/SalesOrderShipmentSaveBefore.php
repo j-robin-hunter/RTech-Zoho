@@ -30,17 +30,19 @@ class SalesOrderShipmentSaveBefore implements ObserverInterface {
     $shipment = $observer->getEvent()->getShipment();
     $order = $shipment->getOrder();
     foreach ($order->getAllItems() as $item) {
-      $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
-      $zohoItem = $this->_zohoClient->getItem($zohoInventory->getZohoId());
-      $sku = $item->getSku();
-      $stockItem = $this->_stockRegistry->getStockItemBySku($sku);
-      if ($stockItem->getManageStock()) {
-        // Set the Magento stock to the Zoho available for sale stock plus the number
-        // of items order inm Magento as the Magento items will have been set as committed stock
-        // THIS IS NOT PERFECT
-        $stockItem->setQty($item->getQtyToInvoice() + $zohoItem['available_for_sale_stock']);
-        $stockItem->setIsInStock(true);
-        $this->_stockRegistry->updateStockItemBySku($sku, $stockItem);
+      if ($item->getProductType() == 'simple') {
+        $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
+        $zohoItem = $this->_zohoClient->getItem($zohoInventory->getZohoId());
+        $sku = $item->getSku();
+        $stockItem = $this->_stockRegistry->getStockItemBySku($sku);
+        if ($stockItem->getManageStock()) {
+          // Set the Magento stock to the Zoho available for sale stock plus the number
+          // of items order inm Magento as the Magento items will have been set as committed stock
+          // THIS IS NOT PERFECT
+          $stockItem->setQty($item->getQtyToInvoice() + $zohoItem['available_for_sale_stock']);
+          $stockItem->setIsInStock(true);
+          $this->_stockRegistry->updateStockItemBySku($sku, $stockItem);
+        }
       }
     }
   }
