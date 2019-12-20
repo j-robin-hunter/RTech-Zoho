@@ -18,6 +18,7 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
   const INVOICES_API = 'invoices';
   const ITEMS_API = 'items';
   const ITEM_GROUPS_API = 'itemgroups';
+  const ITEM_GROUPING_API = 'items/grouping';
   const ITEM_COMPOSITE_API = 'compositeitems';
   const ITEM_UNGROUP_API = 'items/ungroup';
   const PACKAGES_API = 'packages';

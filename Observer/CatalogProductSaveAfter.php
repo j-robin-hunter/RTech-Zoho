@@ -297,7 +297,8 @@ class CatalogProductSaveAfter implements ObserverInterface {
 
       $item = array(
         'item_id' => $zohoInventory->getZohoId(),
-        'name' => $zohoInventory->getProductName()
+        'name' => $zohoInventory->getProductName(),
+        'sku' => $child->getSku()
       );
       $group['items'][] = $item;
     }

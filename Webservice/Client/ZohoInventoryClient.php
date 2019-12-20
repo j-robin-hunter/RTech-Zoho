@@ -37,7 +37,7 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   * @inheritdoc
   */
   public function itemGroupAdd($itemGroup) {
-    return $this->callZoho(self::ITEM_GROUPS_API, self::POST, ['JSONString' => json_encode($itemGroup, true)])['item_group'];
+    return $this->callZoho(self::ITEM_GROUPING_API, self::POST, ['JSONString' => json_encode($itemGroup, true)])['item_group'];
   }
 
   /**
@@ -137,7 +137,7 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   * @inheritdoc
   */
   public function itemGroupUpdate($itemGroup) {
-    $this->callZoho(self::ITEM_GROUPS_API . '/' . $itemGroup['group_id'], self::PUT, ['JSONString' => json_encode($itemGroup, true)]);
+    $this->callZoho(self::ITEM_GROUPING_API . '/' . $itemGroup['group_id'], self::PUT, ['JSONString' => json_encode($itemGroup, true)]);
   }
 
   /**
