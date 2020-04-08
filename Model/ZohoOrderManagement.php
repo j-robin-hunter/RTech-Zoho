@@ -9,6 +9,7 @@ use RTech\Zoho\Api\Data\ZohoOrderManagementInterface;
 use RTech\Zoho\Api\Data\ZohoSalesOrderManagementInterface;
 use RTech\Zoho\Webservice\Client\ZohoBooksClient;
 use Magento\Framework\Exception\NoSuchEntityException;
+use RTech\Payment\Model\PaymentTerms;
 
 class ZohoOrderManagement implements ZohoOrderManagementInterface {
 
@@ -21,7 +22,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   protected $_zohoSalesOrderManagementRepository;
   protected $_zohoSalesOrderManagementFactory;
   protected $_customerSession;
-  protected $_termsRepository;
+  protected $_priceHelper;
 
   public function __construct(
     \RTech\Zoho\Helper\ConfigData $configData,
@@ -34,7 +35,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     \RTech\Zoho\Model\ZohoSalesOrderManagementRepository $zohoSalesOrderManagementRepository,
     \RTech\Zoho\Model\ZohoSalesOrderManagementFactory $zohoSalesOrderManagementFactory,
     \Magento\Customer\Model\Session $customerSession,
-    \RTech\Payment\Model\TermsRepository $termsRepository
+    \Magento\Framework\Pricing\Helper\Data $priceHelper
   ) {
     $this->_zohoClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
     $this->_zohoInventoryRepository = $zohoInventoryRepository;
@@ -49,7 +50,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $this->_zohoSalesOrderManagementRepository = $zohoSalesOrderManagementRepository;
     $this->_zohoSalesOrderManagementFactory = $zohoSalesOrderManagementFactory;
     $this->_customerSession = $customerSession;
-    $this->_termsRepository = $termsRepository;
+    $this->_priceHelper = $priceHelper;
   }
 
   /**
@@ -76,6 +77,16 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   public function orderEstimate($order) {
     $contact = $this->_zohoOrderContact->getContactForOrder($order);
     $contact = $this->_zohoOrderContact->updateOrderContact($contact, $order);
+
+    $creditLimit = $contact['credit_limit'] ?? 0;
+
+    if ($order->getPayment()->getMethodInstance()->getCode() == PaymentTerms::PAYMENT_METHOD_TERMS_CODE && $creditLimit > 0) {
+      $remainingCredit = $creditLimit - $contact['outstanding_receivable_amount_bcy'] - $order->getTotalDue();
+      if ($remainingCredit < 0 ) {
+        $amountOver = $this->_priceHelper->currency(abs($remainingCredit), true, false);
+        throw new \Exception(__('Regretfully this order exceeds the current credit limit by %1', $amountOver));
+      }
+    }
 
     $estimate = [
       'customer_id' => $contact['contact_id'],
@@ -242,7 +253,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       $customer = $this->_customerSession->getCustomer()->getDataModel();
       $hasTerms = $customer->getCustomAttribute('payment_terms');
       if ($hasTerms) {
-        $payload['terms'] = $this->_termsRepository->getById($hasTerms->getValue())->getTerms();
+        // $payload['terms'] = $this->_termsRepository->getById($hasTerms->getValue())->getTerms();
       }
     }
   }

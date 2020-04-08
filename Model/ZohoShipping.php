@@ -46,7 +46,7 @@ class ZohoShipping implements ZohoShippingInterface {
     }
 
     $package = [
-      'package_number' => sprintf('web-%06d', $order->getIncrementId()),
+      //Having this number can create auto-increment issues in Zoho:   'package_number' => sprintf('web-%06d', $order->getIncrementId()),
       'date' => date('Y-m-d'),
       'line_items' => $lineitems,
       'notes' => $comments
@@ -57,7 +57,7 @@ class ZohoShipping implements ZohoShippingInterface {
     $trackingNumber = $tracking->getNumber() ? : sprintf(__('none set'));
     $trackingTitle = $tracking->getTitle() ? : sprintf(__('none set'));
     $shipment = [
-      'shipment_number' => sprintf('web-%06d', $order->getIncrementId()),
+      // Having this number can create auto-increment issues in Zoho:   'shipment_number' => sprintf('web-%06d', $order->getIncrementId()),
       'date' => date('Y-m-d'),
       'tracking_number' => $trackingNumber,
       'delivery_method' => $trackingTitle
