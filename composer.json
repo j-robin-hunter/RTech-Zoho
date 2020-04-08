@@ -11,7 +11,7 @@
   ],
   "require": {
     "rtech/neo": "^1.0",
-    "retch/payment": "^1.0"
+    "rtech/payment": "^1.0"
   },
   "autoload": {
     "files": [ "registration.php" ],
