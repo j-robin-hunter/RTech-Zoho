@@ -28,36 +28,52 @@
 
       <group id="books" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
         <label>Books</label>
-        <field id="api_key" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+        <field id="api_key" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
           <label>API Key</label>
         </field>
-        <field id="url" translate="label" type="text" sortOrder="2" showInDefault="1" showInWebsite="0" showInStore="0">
+        <field id="url" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
           <label>Endpoint</label>
           <comment>API endpoint URL</comment>
         </field>
-        <field id="eu_vat_group" translate="label" type="select" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
+        <field id="eu_vat_group" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
           <label>Magento EU VAT Registered Group</label>
           <comment>Name of Magento customer group for EU VAT registered customners</comment>
           <source_model>RTech\Zoho\Model\Config\Source\CustomerGroups</source_model>
-        </field>
-        <field id="quote_validity" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="0" showInStore="0">
-          <label>Quote Validity </label>
-          <comment>Number of days for quotes to be valid for</comment>
         </field>
       </group>
 
       <group id="inventory" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
         <label>Inventory</label>
-        <field id="api_key" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+        <field id="api_key" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
           <label>API Key</label>
         </field>
-        <field id="url" translate="label" type="text" sortOrder="2" showInDefault="1" showInWebsite="0" showInStore="0">
+        <field id="url" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
           <label>Endpoint</label>
           <comment>API endpoint URL</comment>
         </field>
-        <field id="shipping_sku" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
+        <field id="shipping_sku" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
           <label>Shipping SKU</label>
           <comment>The Zoho Inventory SKU for shipping</comment>
+        </field>
+      </group>
+
+      <group id="estimate" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+        <label>Estimates</label>
+        <field id="validity" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Estimate Validity </label>
+          <comment>Number of days for estimates to be valid for</comment>
+        </field>
+        <field id="terms" translate="label" type="textarea" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Terms &amp; Conditons</label>
+          <comment>Terms &amp; conditions text to be added to estimates</comment>
+        </field>
+      </group>
+
+      <group id="invoice" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+        <label>Invoices</label>
+        <field id="terms" translate="label" type="textarea" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Terms &amp; Conditons</label>
+          <comment>Terms &amp; conditions text to be added to invoices</comment>
         </field>
       </group>
 

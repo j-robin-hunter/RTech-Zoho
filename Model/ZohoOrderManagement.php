@@ -9,7 +9,6 @@ use RTech\Zoho\Api\Data\ZohoOrderManagementInterface;
 use RTech\Zoho\Api\Data\ZohoSalesOrderManagementInterface;
 use RTech\Zoho\Webservice\Client\ZohoBooksClient;
 use Magento\Framework\Exception\NoSuchEntityException;
-use RTech\Payment\Model\PaymentTerms;
 
 class ZohoOrderManagement implements ZohoOrderManagementInterface {
 
@@ -17,7 +16,9 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   protected $_zohoOrderContact;
   protected $_zohoInventoryRepository;
   protected $_zohoShippingSkuId;
-  protected $_quoteValidity;
+  protected $_estimateValidity;
+  protected $_estimateTerms;
+  protected $_invoiceTerms;
   protected $_stockRegistry;
   protected $_zohoSalesOrderManagementRepository;
   protected $_zohoSalesOrderManagementFactory;
@@ -34,8 +35,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     \Magento\CatalogInventory\Api\StockRegistryInterface $stockRegistry,
     \RTech\Zoho\Model\ZohoSalesOrderManagementRepository $zohoSalesOrderManagementRepository,
     \RTech\Zoho\Model\ZohoSalesOrderManagementFactory $zohoSalesOrderManagementFactory,
-    \Magento\Customer\Model\Session $customerSession,
-    \Magento\Framework\Pricing\Helper\Data $priceHelper
+    \Magento\Customer\Model\Session $customerSession
   ) {
     $this->_zohoClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
     $this->_zohoInventoryRepository = $zohoInventoryRepository;
@@ -45,12 +45,13 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $shippingSku = $configData->getZohoShippingSku($storeId);
     $shippingProduct = $productRepository->get($shippingSku);
     $this->_zohoShippingSkuId = $zohoInventoryRepository->getById($shippingProduct->getId())->getZohoId();
-    $this->_quoteValidity = $configData->getZohoQuoteValidity($storeId);
+    $this->_estimateValidity = $configData->getZohoEstimateValidity($storeId);
+    $this->_estimateTerms = $configData->getZohoEstimateTerms($storeId);
+    $this->_invoiceTerms = $configData->getZohoInvoiceTerms($storeId);
     $this->_stockRegistry = $stockRegistry;
     $this->_zohoSalesOrderManagementRepository = $zohoSalesOrderManagementRepository;
     $this->_zohoSalesOrderManagementFactory = $zohoSalesOrderManagementFactory;
     $this->_customerSession = $customerSession;
-    $this->_priceHelper = $priceHelper;
   }
 
   /**
@@ -60,10 +61,10 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $estimate = [
       'customer_id' => $contactId,
       'reference_number' => sprintf('wqt-%06d', $quote->getId()),
-      'expiry_date' => date('Y-m-d', strtotime($quote->getUpdatedAt() . ' + ' . $this->_quoteValidity . 'days')),
-      'is_inclusive_tax' => false
+      'expiry_date' => date('Y-m-d', strtotime($quote->getUpdatedAt() . ' + ' . $this->_estimateValidity . 'days')),
+      'is_inclusive_tax' => false,
+      'terms' => $this->_estimateTerms
     ];
-    $this->addTerms($estimate);
     $estimate['line_items'] = $this->createLineitems($quote, $shippingAmount);
     $zohoEstimate = $this->_zohoClient->addEstimate($estimate);
     $this->_zohoClient->markEstimateSent($zohoEstimate['estimate_id']);
@@ -78,24 +79,13 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $contact = $this->_zohoOrderContact->getContactForOrder($order);
     $contact = $this->_zohoOrderContact->updateOrderContact($contact, $order);
 
-    $creditLimit = $contact['credit_limit'] ?? 0;
-
-    if ($order->getPayment()->getMethodInstance()->getCode() == PaymentTerms::PAYMENT_METHOD_TERMS_CODE && $creditLimit > 0) {
-      $remainingCredit = $creditLimit - $contact['outstanding_receivable_amount_bcy'] - $order->getTotalDue();
-      if ($remainingCredit < 0 ) {
-        $amountOver = $this->_priceHelper->currency(abs($remainingCredit), true, false);
-        throw new \Exception(__('Regretfully this order exceeds the current credit limit by %1', $amountOver));
-      }
-    }
-
     $estimate = [
       'customer_id' => $contact['contact_id'],
       'reference_number' => sprintf('web-%06d', $order->getIncrementId()),
-      'expiry_date' => date('Y-m-d', strtotime($order->getCreatedAt() . ' + ' . $this->_quoteValidity . 'days')),
-      'is_inclusive_tax' => false
+      'expiry_date' => date('Y-m-d', strtotime($order->getCreatedAt() . ' + ' . $this->_estimateValidity . 'days')),
+      'is_inclusive_tax' => false,
+      'terms' => $this->_estimateTerms
     ];
-
-    $this->addTerms($estimate);
 
     if ($order->getStatusHistories()) {
       $histories = $order->getStatusHistories();
@@ -122,9 +112,9 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   */
   public function updateEstimate($estimateId, $contactId, $source, $shippingAmount) {
     $estimate = [
-      'customer_id' => $contactId
+      'customer_id' => $contactId,
+      'terms' => $this->_estimateTerms
     ];
-    $this->addTerms($estimate);
     $estimate['line_items'] = $this->createLineitems($source, $shippingAmount);
     $zohoEstimate = $this->_zohoClient->updateEstimate($estimateId, $estimate);
 
@@ -146,10 +136,9 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $salesOrder = [
       'customer_id' => $zohoSalesOrderManagement->getZohoId(),
       'reference_number' => $ref ? : sprintf('web-%06d', $order->getIncrementId()),
-      'is_inclusive_tax' => false
+      'is_inclusive_tax' => false,
+      'terms' => $this->_invoiceTerms
     ];
-
-    $this->addTerms($salesOrder);
 
     if ($order->getStatusHistories()) {
       $histories = $order->getStatusHistories();
@@ -175,6 +164,9 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   * @inheritdoc
   */
   public function createInvoice($zohoSalesOrderManagement, $order) {
+    // Get payment terms
+    $contact = $this->_zohoClient->getContact($zohoSalesOrderManagement->getZohoId());
+
     // Create invoice from sales order
     $zohoInvoice = $this->_zohoClient->convertSalesOrderToInvoice($zohoSalesOrderManagement->getSalesOrderId());
 
@@ -191,10 +183,10 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $invoice = [
       'customer_id' => $zohoSalesOrderManagement->getZohoId(),
       'reference_number' => sprintf('web-%06d', $order->getIncrementId()),
-      'notes' => $comments
+      'notes' => $comments,
+      'payment_terms' => $contact['payment_terms'] ?? 0,
+      'terms' => $this->_invoiceTerms
     ];
-
-    $this->addTerms($invoice);
 
     $zohoInvoice = $this->_zohoClient->updateInvoice($zohoInvoice['invoice_id'], $invoice);
     $this->_zohoClient->markInvoiceSent($zohoInvoice['invoice_id']);
@@ -221,12 +213,12 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     foreach ($items->getAllItems() as $item) {
       if ($item->getProductType() != 'configurable') {
         $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
-        $quantity = $item->getQty();
+
         // If this is a child we now need the parent to get the price etc.
         $item = $item->getParentItem() ?: $item;
         $lineitem = [
           'item_id' => $zohoInventory->getZohoId(),
-          'quantity' => $quantity,
+          'quantity' => $item->getQtyOrdered(),
           'rate' => $item->getPrice(),
           'discount' => sprintf('%01.2f%%', $item->getDiscountPercent())
         ];
@@ -246,15 +238,5 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     }
     $lineitems[] = $shipping;
     return $lineitems;
-  }
-
-  private function addTerms(&$payload) {
-    if ($this->_customerSession->isLoggedIn()) {
-      $customer = $this->_customerSession->getCustomer()->getDataModel();
-      $hasTerms = $customer->getCustomAttribute('payment_terms');
-      if ($hasTerms) {
-        // $payload['terms'] = $this->_termsRepository->getById($hasTerms->getValue())->getTerms();
-      }
-    }
   }
 }

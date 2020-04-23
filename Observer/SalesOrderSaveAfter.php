@@ -101,7 +101,7 @@ class SalesOrderSaveAfter implements ObserverInterface {
           }
           // As this order is to be invoiced with respect to Magento, accept the Zoho estimate,
           // mark the sales order as open, which allows purchase orders, invoices and shipping to
-          // occur within Zoho and then create the Zoho invoice from teh sales order
+          // occur within Zoho and then create the Zoho invoice from the sales order
           if (!$zohoSalesOrderManagement->getInvoiceId()) {
             $this->_zohoOrderManagement->acceptEstimate($zohoSalesOrderManagement);
             $this->_zohoOrderManagement->openSalesOrder($zohoSalesOrderManagement);
