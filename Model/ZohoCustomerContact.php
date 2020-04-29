@@ -86,7 +86,8 @@ class ZohoCustomerContact implements ZohoCustomerContactInterface {
       try {
         $this->_zohoCustomerRepository->save($zohoCustomer);
       } catch (\Exception $e) {
-        $this->_logger->error(__('Error while saving Customer Repository: ' . $e->getMessage()));
+        $this->_logger->error(__('Error while saving Customer Repository'), ['exception' => $e]);
+        throw $e;
       }
     }
     return $contact;

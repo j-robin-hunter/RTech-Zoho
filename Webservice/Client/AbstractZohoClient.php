@@ -106,13 +106,23 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
   * @inheritdoc
   */
   public function getTaxes() {
-    return $this->callZoho(self::TAXES_API, self::GET, [])['taxes'];
+    try {
+      return $this->callZoho(self::TAXES_API, self::GET, [])['taxes'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getTaxes'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function getItem($itemId) {
-    return $this->callZoho(self::ITEMS_API . '/' . $itemId, self::GET, [])['item'];
+    try {
+      return $this->callZoho(self::ITEMS_API . '/' . $itemId, self::GET, [])['item'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getItem'), ['exception' => $e]);
+      throw $e;
+    }
   }
 }

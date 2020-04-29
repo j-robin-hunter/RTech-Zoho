@@ -80,7 +80,7 @@ class SalesOrderSaveAfter implements ObserverInterface {
           $savedQuoteRepository->delete($savedQuote);
         }
       } catch (\Exception $e) {
-        $this->_logger->error(__('Error while creating Zoho estimate: '. $e->getMessage()));
+        $this->_logger->error(__('Error while creating Zoho estimate'), ['exception' => $e]);
         throw $e;
       }
     }
@@ -122,7 +122,7 @@ class SalesOrderSaveAfter implements ObserverInterface {
       }
 
     } catch (\Exception $e) {
-      $this->_logger->error(__('Error processing sales order in state ' . $order->getStatusLabel() . ': '. $e->getMessage()));
+      $this->_logger->error(__('Error processing sales order in state ') . $order->getStatusLabel(), ['exception' => $e]);
       throw $e;
     }
   }

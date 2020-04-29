@@ -135,9 +135,9 @@ class AddressRepositoryZohoPlugin {
           'contact_id' => $zohoCustomerId,
           'contact_name' => empty($vat['company_name']) ? $contactName : $vat['company_name'],
           'company_name' => empty($vat['company_name']) ? '' : substr(trim($vat['company_name']), 0, 200),
-          'vat_reg_no' => $vat['vat_reg_no'],
+          'vat_reg_no' => $vat['vat_reg_no'] ?? '',
           'vat_treatment' => $vat['vat_treatment'],
-          'country_code' => $vat['country_code'],
+          'country_code' => $vat['country_code'] ?? '',
           'billing_address' => $zohoAddressArray,
         ];
         if ($removeShipping) {
@@ -186,12 +186,17 @@ class AddressRepositoryZohoPlugin {
             $this->_zohoClient->deleteAddress($zohoCustomerId, $zohoAddress->getZohoAddressId());
           }
         }
+        $zohoAddressId = $zohoContact['shipping_address']['address_id'] ?? ($zohoContact['billing_address']['address_id'] ?? '');
+        if ($addBilling)  {
+          $zohoAddressId = $zohoContact['billing_address']['address_id'];
+        }
       }
 
       $this->saveZohoAddress($address->getId(), $customerId, $addBilling, $addShipping, $zohoAddressId);
 
     } catch (\Exception $ex) {
-      $this->_logger->error(__('Error while saving address to Zoho Books: ' . $ex->getMessage()));
+      $this->_logger->error(__('Error while saving address to Zoho Books'), ['exception' => $ex]);
+      throw $ex;
     }
   }
 

@@ -14,6 +14,8 @@ use RTech\Zoho\Webservice\Client\AbstractZohoClient;
 
 class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInterface {
 
+  private $_logger;
+
   public function __construct(
     \RTech\Zoho\Helper\ConfigData $configData,
     \Zend\Http\Client $zendClient,
@@ -23,6 +25,7 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
     $endpoint = $configData->getZohoBooksEndpoint($storeId);
     $key = $configData->getZohoBooksKey($storeId);
     $organisationId = $configData->getZohoOrganistionId($storeId);
+    $this->_logger = \Magento\Framework\App\ObjectManager::getInstance()->get(\Psr\Log\LoggerInterface::class);
     parent::__construct($zendClient, $endpoint, $key, $organisationId);
   }
 
@@ -30,80 +33,134 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   * @inheritdoc
   */
   public function lookupContact($contactName, $email) {
-    $response = $this->callZoho(self::CONTACTS_API, self::GET, ['contact_name' => $contactName, 'email' => $email]);
-    return count($response['contacts']) == 1 ? $response['contacts'][0] : null;
+    try {
+      $response = $this->callZoho(self::CONTACTS_API, self::GET, ['contact_name' => $contactName, 'email' => $email]);
+      return count($response['contacts']) == 1 ? $response['contacts'][0] : null;
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: lookupContact'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function addContact($contact) {
-    return $this->callZoho(self::CONTACTS_API, self::POST, ['JSONString' => json_encode($contact, true)])['contact'];
+    try {
+      return $this->callZoho(self::CONTACTS_API, self::POST, ['JSONString' => json_encode($contact, true)])['contact'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: addContact'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function getContact($contactId) {
-    return $this->callZoho(self::CONTACTS_API . '/' . $contactId, self::GET, [])['contact'];
+    try {
+      return $this->callZoho(self::CONTACTS_API . '/' . $contactId, self::GET, [])['contact'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getContact'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function updateContact($contact) {
-    return $this->callZoho(self::CONTACTS_API . '/' . $contact['contact_id'], self::PUT, ['JSONString' => json_encode($contact, true)])['contact'];
-
+    try {
+      return $this->callZoho(self::CONTACTS_API . '/' . $contact['contact_id'], self::PUT, ['JSONString' => json_encode($contact, true)])['contact'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: updateContact'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function deleteContact($contactId) {
-    $this->callZoho(self::CONTACTS_API . '/' . $contactId, self::DELETE, []);
+    try {
+      $this->callZoho(self::CONTACTS_API . '/' . $contactId, self::DELETE, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: deleteContact'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function contactSetInactive($contactId) {
-    $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/inactive', self::POST, []);
+    try {
+      $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/inactive', self::POST, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: contactSetInactive'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function addEstimate($estimate) {
-    return $this->callZoho(self::ESTIMATES_API, self::POST, ['JSONString' => json_encode($estimate, true)])['estimate'];
+    try {
+      return $this->callZoho(self::ESTIMATES_API, self::POST, ['JSONString' => json_encode($estimate, true)])['estimate'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: addEstimate'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function updateEstimate($estimateId, $estimate) {
-    return $this->callZoho(self::ESTIMATES_API .'/' . $estimateId, self::PUT, ['JSONString' => json_encode($estimate, true)])['estimate'];
+    try {
+      return $this->callZoho(self::ESTIMATES_API .'/' . $estimateId, self::PUT, ['JSONString' => json_encode($estimate, true)])['estimate'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: updateEstimate'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function markEstimateSent($estimateId) {
-    $this->callZoho(self::ESTIMATES_API .'/' . $estimateId . '/status/sent', self::POST, []);
+    try {
+      $this->callZoho(self::ESTIMATES_API .'/' . $estimateId . '/status/sent', self::POST, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: markEstimateSent'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function markEstimateAccepted($estimateId) {
-    $this->callZoho(self::ESTIMATES_API .'/' . $estimateId . '/status/accepted', self::POST, []);
+    try {
+      $this->callZoho(self::ESTIMATES_API .'/' . $estimateId . '/status/accepted', self::POST, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: markEstimateAccepted'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function deleteEstimate($estimateId) {
-    if ($estimateId) {
-      $this->callZoho(self::ESTIMATES_API .'/' . $estimateId, self::DELETE, []);
+    try {
+      if ($estimateId) {
+        $this->callZoho(self::ESTIMATES_API .'/' . $estimateId, self::DELETE, []);
+      }
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: deleteEstimate'), ['exception' => $e]);
+      throw $e;
     }
   }
 
@@ -111,29 +168,49 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   * @inheritdoc
   */
   public function addSalesOrder($salesOrder) {
-    return $this->callZoho(self::SALESORDERS_API, self::POST, ['JSONString' => json_encode($salesOrder, true)])['salesorder'];
+    try {
+      return $this->callZoho(self::SALESORDERS_API, self::POST, ['JSONString' => json_encode($salesOrder, true)])['salesorder'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: addSalesOrder'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function markSalesOrderOpen($salesOrderId) {
-    $this->callZoho(self::SALESORDERS_API .'/' . $salesOrderId . '/status/open', self::POST, []);
+    try {
+      $this->callZoho(self::SALESORDERS_API .'/' . $salesOrderId . '/status/open', self::POST, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: markSalesOrderOpen'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function convertSalesOrderToInvoice($salesOrderId) {
-    return $this->callZoho(self::INVOICES_API .'/fromsalesorder' , self::POST, ['salesorder_id' => $salesOrderId])['invoice'];
+    try {
+      return $this->callZoho(self::INVOICES_API .'/fromsalesorder' , self::POST, ['salesorder_id' => $salesOrderId])['invoice'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: convertSalesOrderToInvoice'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function deleteSalesOrder($salesOrderId) {
-    if ($salesOrderId) {
-      $this->callZoho(self::SALESORDERS_API .'/' . $salesOrderId, self::DELETE, []);
+    try {
+      if ($salesOrderId) {
+        $this->callZoho(self::SALESORDERS_API .'/' . $salesOrderId, self::DELETE, []);
+      }
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: deleteSalesOrder'), ['exception' => $e]);
+      throw $e;
     }
   }
 
@@ -141,7 +218,12 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   * @inheritdoc
   */
   public function updateInvoice($invoiceId, $invoice) {
-    return $this->callZoho(self::INVOICES_API . '/' . $invoiceId, self::PUT, ['JSONString' => json_encode($invoice, true)])['invoice'];
+    try {
+      return $this->callZoho(self::INVOICES_API . '/' . $invoiceId, self::PUT, ['JSONString' => json_encode($invoice, true)])['invoice'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: updateInvoice'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
 
@@ -149,15 +231,25 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   * @inheritdoc
   */
   public function markInvoiceSent($invoiceId) {
-    $this->callZoho(self::INVOICES_API .'/' . $invoiceId . '/status/sent', self::POST, []);
+    try {
+      $this->callZoho(self::INVOICES_API .'/' . $invoiceId . '/status/sent', self::POST, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: markInvoiceSent'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function deleteInvoice($invoiceId) {
-    if ($invoiceId) {
-      $this->callZoho(self::INVOICES_API .'/' . $invoiceId, self::DELETE, []);
+    try {
+      if ($invoiceId) {
+        $this->callZoho(self::INVOICES_API .'/' . $invoiceId, self::DELETE, []);
+      }
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: deleteInvoice'), ['exception' => $e]);
+      throw $e;
     }
   }
 
@@ -165,27 +257,49 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   * @inheritdoc
   */
   public function getAddress($addressId) {
-    return $this->callZoho(self::CONTACTS_API . '/' . $addressId . '/address', self::GET, [])['contact'];
+    try {
+      return $this->callZoho(self::CONTACTS_API . '/' . $addressId . '/address', self::GET, [])['contact'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getAddress'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function addAddress($contactId, $address) {
-    return $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/address', self::POST, ['JSONString' => json_encode($address, true)])['address_info'];
+    try {
+      return $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/address', self::POST, ['JSONString' => json_encode($address, true)])['address_info'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: addAddress'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function updateAddress($contactId, $addressId, $address) {
-    return $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/address/' . $addressId, self::PUT, ['JSONString' => json_encode($address, true)])['address_info'];
+    try {
+      return $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/address/' . $addressId, self::PUT, ['JSONString' => json_encode($address, true)])['address_info'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: updateAddress'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function deleteAddress($contactId, $addressId) {
-    return $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/address/' . $addressId, self::DELETE, []);
+    try {
+      return $this->callZoho(self::CONTACTS_API . '/' . $contactId . '/address/' . $addressId, self::DELETE, []);
+    } catch (ZohoItemNotFoundException $e) {
+      // Address does not exist so do nothing
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: deleteAddress'), ['exception' => $e]);
+      throw $e;
+    }
   }
 }

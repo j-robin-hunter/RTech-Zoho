@@ -36,7 +36,8 @@ class CustomerAddressDeleteAfter implements ObserverInterface {
         $zohoContact = $this->_zohoCustomerContact->getContact($customer);
         $zohoContact = $this->_zohoCustomerContact->updateContactAddresses($zohoContact, $billingAddress, $shippingddress, $customer->getGroupId());
       } catch (\Exception $e) {
-        $this->_logger->error(__('Unable to update address: ' . $e->getMessage()));
+        $this->_logger->error(__('Unable to update address: '), ['exception' => $e]);
+        throw $e;
       }
     } else {
     }

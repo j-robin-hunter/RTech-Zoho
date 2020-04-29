@@ -30,28 +30,48 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   * @inheritdoc
   */
   public function itemAdd($item) {
-    return $this->callZoho(self::ITEMS_API, self::POST, ['JSONString' => json_encode($item, true)])['item'];
+    try {
+      return $this->callZoho(self::ITEMS_API, self::POST, ['JSONString' => json_encode($item, true)])['item'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemAdd'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemGroupAdd($itemGroup) {
-    return $this->callZoho(self::ITEM_GROUPING_API, self::POST, ['JSONString' => json_encode($itemGroup, true)])['item_group'];
+    try {
+      return $this->callZoho(self::ITEM_GROUPING_API, self::POST, ['JSONString' => json_encode($itemGroup, true)])['item_group'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemGroupAdd'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemCompositeAdd($compositeItem) {
-    return $this->callZoho(self::ITEM_COMPOSITE_API, self::POST, ['JSONString' => json_encode($compositeItem, true)])['composite_item'];
+    try {
+      return $this->callZoho(self::ITEM_COMPOSITE_API, self::POST, ['JSONString' => json_encode($compositeItem, true)])['composite_item'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemCompositeAdd'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function imageAdd($itemId, $imageFile) {
-    return $this->callZoho(self::ITEMS_API . '/' . $itemId . '/image', self::POST, [], $imageFile);
+    try {
+      return $this->callZoho(self::ITEMS_API . '/' . $itemId . '/image', self::POST, [], $imageFile);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: imageAdd'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
@@ -61,7 +81,8 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
     try {
       return $this->callZoho(self::PACKAGES_API, self::POST, ['salesorder_id' => $salesOrderId, 'JSONString' => json_encode($package, true)])['package'];
     } catch (\Exception $e) {
-      throw new $e;
+      $this->_logger->error(__('Zoho API Error: packageAdd'), ['exception' => $e]);
+      throw $e;
     }
   }
 
@@ -76,7 +97,8 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
         'JSONString' => json_encode($shipment, true)
       ])['shipmentorder'];
     } catch (\Exception $e) {
-      throw new $e;
+      $this->_logger->error(__('Zoho API Error: shipmentAdd'), ['exception' => $e]);
+      throw $e;
     }
   }
 
@@ -84,74 +106,124 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   * @inheritdoc
   */
   public function getItemByName($itemName) {
-    $response = $this->callZoho(self::ITEMS_API, self::GET, ['name' => $itemName]);
-    return count($response['items']) == 1 ? $response['items'][0] : null;
+    try {
+      $response = $this->callZoho(self::ITEMS_API, self::GET, ['name' => $itemName]);
+      return count($response['items']) == 1 ? $response['items'][0] : null;
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getItemByName'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function getItemGroup($groupId) {
-    return $this->callZoho(self::ITEM_GROUPS_API . '/' . $groupId, self::GET, [])['item_group'];
+    try {
+      return $this->callZoho(self::ITEM_GROUPS_API . '/' . $groupId, self::GET, [])['item_group'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getItemGroup'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function getItemGroupByName($groupName) {
-    $response = $this->callZoho(self::ITEM_GROUPS_API, self::GET, ['group_name' => $groupName]);
-    return count($response['itemgroups']) == 1 ? $response['itemgroups'][0] : null;
+    try {
+      $response = $this->callZoho(self::ITEM_GROUPS_API, self::GET, ['group_name' => $groupName]);
+      return count($response['itemgroups']) == 1 ? $response['itemgroups'][0] : null;
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getItemGroupByName'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function getCompositeItem($compositeItemId) {
-    return $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItemId, self::GET, [])['composite_item'];
+    try {
+      return $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItemId, self::GET, [])['composite_item'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getCompositeItem'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function getCompositeItemByName($compositeName) {
-    $response = $this->callZoho(self::ITEM_COMPOSITE_API, self::GET, ['name' => $compositeName]);
-    return count($response['composite_items']) == 1 ? $response['composite_items'][0] : null;
+    try {
+      $response = $this->callZoho(self::ITEM_COMPOSITE_API, self::GET, ['name' => $compositeName]);
+      return count($response['composite_items']) == 1 ? $response['composite_items'][0] : null;
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getCompositeItemByName'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function getSalesOrder($salesOrderId) {
-    return $this->callZoho(self::SALESORDERS_API . '/' . $salesOrderId, self::GET, [])['salesorder'];
+    try {
+      return $this->callZoho(self::SALESORDERS_API . '/' . $salesOrderId, self::GET, [])['salesorder'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getSalesOrder'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemUpdate($item) {
-    unset($item['documents']); // Currently, if this is set then the API call will fail!!
-    return $this->callZoho(self::ITEMS_API . '/' . $item['item_id'], self::PUT, ['JSONString' => json_encode($item, true)])['item'];
+    try  {
+      unset($item['documents']); // Currently, if this is set then the API call will fail!!
+      return $this->callZoho(self::ITEMS_API . '/' . $item['item_id'], self::PUT, ['JSONString' => json_encode($item, true)])['item'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemUpdate'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemGroupUpdate($itemGroup) {
-    $this->callZoho(self::ITEM_GROUPING_API . '/' . $itemGroup['group_id'], self::PUT, ['JSONString' => json_encode($itemGroup, true)]);
+    try {
+      $this->callZoho(self::ITEM_GROUPING_API . '/' . $itemGroup['group_id'], self::PUT, ['JSONString' => json_encode($itemGroup, true)]);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemGroupUpdate'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemCompositeUpdate($compositeItem) {
-    $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItem['composite_item_id'], self::PUT, ['JSONString' => json_encode($compositeItem, true)]);
+    try {
+      $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItem['composite_item_id'], self::PUT, ['JSONString' => json_encode($compositeItem, true)]);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemCompositeUpdate'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemDelete($itemId) {
-    $this->callZoho(self::ITEMS_API . '/' . $itemId, self::DELETE, []);
+    try {
+      $this->callZoho(self::ITEMS_API . '/' . $itemId, self::DELETE, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemDelete'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
@@ -165,70 +237,119 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   * @inheritdoc
   */
   public function itemUngroup($itemId) {
-    $this->callZoho(self::ITEM_UNGROUP_API, self::POST, ['item_ids' => $itemId]);
+    try {
+      $this->callZoho(self::ITEM_UNGROUP_API, self::POST, ['item_ids' => $itemId]);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemUngroup'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemSetActive($itemId) {
-    $this->callZoho(self::ITEMS_API . '/' . $itemId . '/active', self::POST, []);
+    try {
+      $this->callZoho(self::ITEMS_API . '/' . $itemId . '/active', self::POST, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemSetActive'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemSetInactive($itemId) {
-    $this->callZoho(self::ITEMS_API . '/' . $itemId . '/inactive', self::POST, []);
+    try {
+      $this->callZoho(self::ITEMS_API . '/' . $itemId . '/inactive', self::POST, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemSetInactive'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemGroupDelete($groupId) {
-    $this->callZoho(self::ITEM_GROUPS_API . '/' . $groupId, self::DELETE, []);
+    try {
+      $this->callZoho(self::ITEM_GROUPS_API . '/' . $groupId, self::DELETE, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemGroupDelete'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemGroupSetActive($groupId) {
-    $this->callZoho(self::ITEM_GROUPS_API . '/' . $groupId . '/active', self::POST, []);
+    try {
+      $this->callZoho(self::ITEM_GROUPS_API . '/' . $groupId . '/active', self::POST, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemGroupSetActive'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemGroupSetInactive($groupId) {
-    $this->callZoho(self::ITEM_GROUPS_API . '/' . $groupId . '/inactive', self::POST, []);
+    try {
+      $this->callZoho(self::ITEM_GROUPS_API . '/' . $groupId . '/inactive', self::POST, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemGroupSetInactive'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemCompositeDelete($compositeItem) {
-    $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItem, self::DELETE, []);
+    try {
+      $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItem, self::DELETE, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemCompositeDelete'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemCompositeSetActive($compositeItemId) {
-    $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItemId . '/active', self::POST, []);
+    try {
+      $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItemId . '/active', self::POST, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemCompositeSetActive'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function itemCompositeSetInactive($compositeItemId) {
-    $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItemId . '/inactive', self::POST, []);
-
+    try {
+      $this->callZoho(self::ITEM_COMPOSITE_API . '/' . $compositeItemId . '/inactive', self::POST, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: itemCompositeSetInactive'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**
   * @inheritdoc
   */
   public function imageDelete($itemId) {
-    return $this->callZoho(self::ITEMS_API . '/' . $itemId . '/image', self::DELETE, []);
+    try {
+      return $this->callZoho(self::ITEMS_API . '/' . $itemId . '/image', self::DELETE, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: imageDelete'), ['exception' => $e]);
+      throw $e;
+    }
   }
 }
