@@ -58,13 +58,19 @@ class ContactHelper {
 
   protected $_countryFactory;
   protected $_regionFactory;
+  protected $_configData;
+  protected $_storeId;
 
   public function __construct(
     \Magento\Directory\Model\CountryFactory $countryFactory,
-    \Magento\Directory\Model\RegionFactory $regionFactory
+    \Magento\Directory\Model\RegionFactory $regionFactory,
+    \Rtech\Zoho\Helper\ConfigData $configData,
+    \Magento\Store\Model\StoreManagerInterface $storeManager
   ) {
     $this->_countryFactory = $countryFactory;
     $this->_regionFactory = $regionFactory;
+    $this->_configData = $configData;
+    $this->_storeId = $storeManager->getStore()->getId();
   }
 
   public function getContactArray($prefix, $firstName, $middleName, $lastName, $suffix, $email, $website) {
