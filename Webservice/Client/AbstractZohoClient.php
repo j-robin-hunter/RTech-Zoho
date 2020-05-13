@@ -37,6 +37,7 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
   protected $_endpoint;
   protected $_key;
   protected $_organisationId;
+  protected $_logger;
 
   public function __construct(
     \Zend\Http\Client $zendClient,
@@ -48,6 +49,7 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
     $this->_endpoint = $endpoint;
     $this->_key = $key;
     $this->_organisationId = $organisationId;
+    $this->_logger = \Magento\Framework\App\ObjectManager::getInstance()->get(\Psr\Log\LoggerInterface::class);
   }
 
   protected function callZoho($api, $method, $parameters, $imageFile=null) {

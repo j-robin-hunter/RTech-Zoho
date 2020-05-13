@@ -20,7 +20,7 @@
   <preference for="RTech\Zoho\Api\Data\ZohoCustomerContactInterface" type="RTech\Zoho\Model\ZohoCustomerContact" />
   <preference for="RTech\Zoho\Api\Data\ZohoOrderContactInterface" type="RTech\Zoho\Model\ZohoOrderContact" />
 
-  <type name="Magento\Catalog\Api\ProductRepositoryInterface">
+  <!-- <type name="Magento\Catalog\Api\ProductRepositoryInterface">
     <plugin name="joinZohoIdToProductRepository" type="RTech\Zoho\Plugin\ProductZohoIdPlugin"/>
   </type>
   <type name="Magento\Customer\Api\AddressRepositoryInterface">
@@ -29,6 +29,6 @@
 
   <type name="Magento\Customer\Model\ResourceModel\Address">
     <plugin name="addressZohoPlugin" type="RTech\Zoho\Plugin\AddressZohoPlugin"/>
-  </type>
+  </type> -->
 
 </config>

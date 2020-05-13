@@ -19,6 +19,11 @@ class ZohoCustomerContact implements ZohoCustomerContactInterface {
   protected $_zohoCustomerFactory;
   protected $_messageManager;
   protected $_contactHelper;
+  protected $_adminSession;
+  protected $_addressRepository;
+  protected $_addressDataFactory;
+  protected $_country;
+  protected $_region;
   protected $_logger;
 
   public function __construct(
@@ -29,6 +34,10 @@ class ZohoCustomerContact implements ZohoCustomerContactInterface {
     \RTech\Zoho\Model\ZohoCustomerFactory $zohoCustomerFactory,
     \Magento\Framework\Message\ManagerInterface $messageManager,
     \RTech\Zoho\Helper\ContactHelper $contactHelper,
+    \Magento\Backend\Model\Auth\Session $adminSession,
+    \Magento\Customer\Api\AddressRepositoryInterface $addressRepository,
+    \Magento\Customer\Api\Data\AddressInterfaceFactory $addressDataFactory,
+    \Magento\Directory\Model\Country $country,
     \Psr\Log\LoggerInterface $logger
   ) {
     $this->_zohoClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
@@ -36,6 +45,10 @@ class ZohoCustomerContact implements ZohoCustomerContactInterface {
     $this->_zohoCustomerFactory = $zohoCustomerFactory;
     $this->_messageManager = $messageManager;
     $this->_contactHelper = $contactHelper;
+    $this->_adminSession = $adminSession;
+    $this->_addressRepository = $addressRepository;
+    $this->_addressDataFactory = $addressDataFactory;
+    $this->_country = $country;
     $this->_logger = $logger;
   }
 
@@ -43,25 +56,23 @@ class ZohoCustomerContact implements ZohoCustomerContactInterface {
   * @inheritdoc
   */
   public function getContact($customer) {
+    $linked = false;
     try {
       $zohoCustomer = $this->_zohoCustomerRepository->getById($customer->getId());
       $contact = $this->_zohoClient->getContact($zohoCustomer->getZohoId());
       $contact = $this->updateContact($contact, $customer);
     } catch (NoSuchEntityException $e) {
-      // Try to lookup the contact
-      $contact = $this->_zohoClient->lookupContact(
-        $this->_contactHelper->getContactName(
-            $customer->getPrefix(),
-            $customer->getFirstname(),
-            $customer->getMiddlename(),
-            $customer->getLastname(),
-            $customer->getSuffix()
-          ),
-        $customer->getEmail());
+      // Try to lookup the contact if admin user
+      $contact = null;
+      if ($this->_adminSession->getUser() !== null) {
+        $contact = $this->_zohoClient->lookupContact(null, $customer->getEmail());
+        if ($contact) {
+          $this->_messageManager->addNotice('Zoho Contact "' . $contact['contact_name']  . '" has been linked using email address ' . $customer->getEmail());
+        }
+      }
 
       if ($contact) {
         // Need to retrieve full contact record
-        $this->_messageManager->addNotice('Zoho Contact "' . $contact['contact_name']  . '" has been linked');
         $contact = $this->_zohoClient->getContact($contact['contact_id']);
       } else {
         // Create a new contact
@@ -149,5 +160,17 @@ class ZohoCustomerContact implements ZohoCustomerContactInterface {
     } catch (NoSuchEntityException $e) {
       // Do nothing
     }
+  }
+
+  private function getCountryCode($countryName) {
+    $countryId = '';
+    $countryCollection = $this->_country->getCollection();
+    foreach ($countryCollection as $country) {
+       if ($country->getName() == $countryName) {
+          $countryId =  $country->getCountryId();
+          break;
+       }
+    }
+    return $countryId;
   }
 }

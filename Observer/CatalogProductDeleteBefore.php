@@ -71,7 +71,7 @@ class CatalogProductDeleteBefore implements ObserverInterface {
         //*****************
         // **** GROUPS ****
         //*****************
-        foreach ($product->getTypeInstance()->getUsedProducts($product) as $child) {
+        foreach ($product->getTypeInstance()->getAssociatedProducts($product) as $child) {
           $zohoInventory = $this->_zohoInventoryRepository->getById($child->getId());
           try {
             $this->_zohoClient->itemUngroup($zohoInventory->getZohoId());

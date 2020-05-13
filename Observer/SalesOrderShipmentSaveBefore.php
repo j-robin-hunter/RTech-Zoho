@@ -37,9 +37,9 @@ class SalesOrderShipmentSaveBefore implements ObserverInterface {
         $stockItem = $this->_stockRegistry->getStockItemBySku($sku);
         if ($stockItem->getManageStock()) {
           // Set the Magento stock to the Zoho available for sale stock plus the number
-          // of items order inm Magento as the Magento items will have been set as committed stock
+          // of items ordered in Magento as the Magento items will have been set as committed stock
           // THIS IS NOT PERFECT
-          $stockItem->setQty($item->getQtyToInvoice() + $zohoItem['available_for_sale_stock']);
+          $stockItem->setQty($item->getQtyOrdered() + $zohoItem['available_for_sale_stock']);
           $stockItem->setIsInStock(true);
           $this->_stockRegistry->updateStockItemBySku($sku, $stockItem);
         }

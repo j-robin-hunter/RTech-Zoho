@@ -280,7 +280,7 @@ class CatalogProductSaveAfter implements ObserverInterface {
       'items' => []
     );
 
-    foreach ($product->getTypeInstance()->getUsedProducts($product) as $child) {
+    foreach ($product->getTypeInstance()->getAssociatedProducts($product) as $child) {
       $zohoInventory = $this->_zohoInventoryRepository->getById($child->getId());
 
       if (!$zohoInventory->getId()) {

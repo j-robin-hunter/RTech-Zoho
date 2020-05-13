@@ -28,40 +28,43 @@ class ZohoShipping implements ZohoShippingInterface {
   public function createShipment($zohoSalesOrderManagement, $order) {
     $zohoSalesOrder = $this->_zohoInventoryClient->getSalesOrder($zohoSalesOrderManagement->getSalesOrderId());
 
-    $lineitems = array();
-    foreach($zohoSalesOrder['line_items'] as $lineitem) {
-      if ($lineitem['sku'] != $this->_shippingSku) {
-        $lineitems[] = [
-          'so_line_item_id' => $lineitem['line_item_id'],
-          'quantity' => $lineitem['quantity']
-        ];
+    // Only create a shipment if this zoho order has no packages associated with it
+    if (empty($zohoSalesOrder['packages'])) {
+      $lineitems = array();
+      foreach($zohoSalesOrder['line_items'] as $lineitem) {
+        if ($lineitem['sku'] != $this->_shippingSku) {
+          $lineitems[] = [
+            'so_line_item_id' => $lineitem['line_item_id'],
+            'quantity' => $lineitem['quantity']
+          ];
+        }
       }
-    }
 
-    $comments = '';
-    foreach ($order->getShipmentsCollection() as $shipments) {
-      foreach ($shipments->getComments() as $comment) {
-        $comments = strlen($comments) > 0 ? '\r\n\r\n' . $comment->getComment() : $comment->getComment();
+      $comments = '';
+      foreach ($order->getShipmentsCollection() as $shipments) {
+        foreach ($shipments->getComments() as $comment) {
+          $comments = strlen($comments) > 0 ? '\r\n\r\n' . $comment->getComment() : $comment->getComment();
+        }
       }
+
+      $package = [
+        //Having this number can create auto-increment issues in Zoho:   'package_number' => sprintf('web-%06d', $order->getIncrementId()),
+        'date' => date('Y-m-d'),
+        'line_items' => $lineitems,
+        'notes' => $comments
+      ];
+      $package = $this->_zohoInventoryClient->packageAdd($zohoSalesOrderManagement->getSalesOrderId(), $package);
+
+      $tracking = $order->getTracksCollection()->getFirstItem();
+      $trackingNumber = $tracking->getNumber() ? : sprintf(__('none set'));
+      $trackingTitle = $tracking->getTitle() ? : sprintf(__('none set'));
+      $shipment = [
+        // Having this number can create auto-increment issues in Zoho:   'shipment_number' => sprintf('web-%06d', $order->getIncrementId()),
+        'date' => date('Y-m-d'),
+        'tracking_number' => $trackingNumber,
+        'delivery_method' => $trackingTitle
+      ];
+      $this->_zohoInventoryClient->shipmentAdd($package, $shipment);
     }
-
-    $package = [
-      //Having this number can create auto-increment issues in Zoho:   'package_number' => sprintf('web-%06d', $order->getIncrementId()),
-      'date' => date('Y-m-d'),
-      'line_items' => $lineitems,
-      'notes' => $comments
-    ];
-    $package = $this->_zohoInventoryClient->packageAdd($zohoSalesOrderManagement->getSalesOrderId(), $package);
-
-    $tracking = $order->getTracksCollection()->getFirstItem();
-    $trackingNumber = $tracking->getNumber() ? : sprintf(__('none set'));
-    $trackingTitle = $tracking->getTitle() ? : sprintf(__('none set'));
-    $shipment = [
-      // Having this number can create auto-increment issues in Zoho:   'shipment_number' => sprintf('web-%06d', $order->getIncrementId()),
-      'date' => date('Y-m-d'),
-      'tracking_number' => $trackingNumber,
-      'delivery_method' => $trackingTitle
-    ];
-    $this->_zohoInventoryClient->shipmentAdd($package, $shipment);
   }
 }

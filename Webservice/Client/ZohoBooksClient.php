@@ -14,7 +14,6 @@ use RTech\Zoho\Webservice\Client\AbstractZohoClient;
 
 class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInterface {
 
-  private $_logger;
 
   public function __construct(
     \RTech\Zoho\Helper\ConfigData $configData,
@@ -34,7 +33,11 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   */
   public function lookupContact($contactName, $email) {
     try {
-      $response = $this->callZoho(self::CONTACTS_API, self::GET, ['contact_name' => $contactName, 'email' => $email]);
+      if (!empty($contactName)) {
+        $response = $this->callZoho(self::CONTACTS_API, self::GET, ['contact_name' => $contactName, 'email' => $email]);
+      } else {
+        $response = $this->callZoho(self::CONTACTS_API, self::GET, ['email' => $email]);
+      }
       return count($response['contacts']) == 1 ? $response['contacts'][0] : null;
     } catch (\Exception $e) {
       $this->_logger->error(__('Zoho API Error: lookupContact'), ['exception' => $e]);
