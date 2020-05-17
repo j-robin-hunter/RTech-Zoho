@@ -17,7 +17,7 @@
     <observer name="zoho_customer_address_save_after" instance="RTech\Zoho\Observer\CustomerAddressSaveAfter"/>
   </event>
   -->
-  <!-- <event name="sales_order_save_after">
+  <event name="sales_order_save_after">
     <observer name="zoho_sales_order_save_after" instance="RTech\Zoho\Observer\SalesOrderSaveAfter" />
   </event>
   <event name="sales_order_invoice_pay">
@@ -25,6 +25,6 @@
   </event>
   <event name="saved_quote_saved_after">
     <observer name="zoho_saved_quote_saved_after" instance="RTech\Zoho\Observer\SavedQuoteSavedAfter"/>
-  </event> -->
+  </event>
 
 </config>
