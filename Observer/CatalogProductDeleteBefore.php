@@ -43,7 +43,11 @@ class CatalogProductDeleteBefore implements ObserverInterface {
         // **** ITEMS ****
         //****************
         try {
-          $this->_zohoClient->itemDelete($zohoInventory->getZohoId());
+          // Only delete the Zoho item if the name and the sku for the product match those in Zoho
+          $inventoryItem = $this->_zohoClient->getItemByName($zohoInventory->getProductName());
+          if ($inventoryItem['sku'] == $product->getSku()) {
+            $this->_zohoClient->itemDelete($zohoInventory->getZohoId());
+          }
         } catch (ZohoOperationException $e) {
           // Item is in use in a transaction so mark as inactive and ungroup
           $this->_zohoClient->itemSetInactive($zohoInventory->getZohoId());
