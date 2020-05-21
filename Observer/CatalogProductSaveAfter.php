@@ -69,6 +69,7 @@ class CatalogProductSaveAfter implements ObserverInterface {
       // Treat as a new product
     }
 
+    $t = in_array($product->getTypeId(), self::ITEM_TYPES);
     if (in_array($product->getTypeId(), self::ITEM_TYPES)) {
       //****************
       // **** ITEMS ****
@@ -119,8 +120,9 @@ class CatalogProductSaveAfter implements ObserverInterface {
           // To successfully link the name and the sku must match the existing Zoho Inventory item
           $inventoryItem = $this->_zohoClient->getItemByName($product->getName());
           if ($inventoryItem['sku'] != $product->getSku()) {
-            //throw ZohoItemExistsException::create('Zoho Inventory item ' . $inventoryItem['name'] . '" already exists with sku "' . $inventoryItem['sku']);
+            // If the product sku and inventory sku are not the same then do not save to Zoho and do not do more work
             $this->_messageManager->addWarning('Product not saved to Zoho Inventory as item ' . $inventoryItem['name'] . '" already exists with sku "' . $inventoryItem['sku']);
+            return;
           } else {
             $this->_messageManager->addNotice('Zoho Inventory item "' . $inventoryItem['name']  . '" has been linked');
             $this->_zohoClient->itemSetActive($inventoryItem['item_id']);
