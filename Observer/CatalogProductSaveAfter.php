@@ -121,7 +121,7 @@ class CatalogProductSaveAfter implements ObserverInterface {
           $inventoryItem = $this->_zohoClient->getItemByName($product->getName());
           if ($inventoryItem['sku'] != $product->getSku()) {
             // If the product sku and inventory sku are not the same then do not save to Zoho and do not do more work
-            $this->_messageManager->addWarning('Product not saved to Zoho Inventory as item ' . $inventoryItem['name'] . '" already exists with sku "' . $inventoryItem['sku']);
+            $this->_messageManager->addWarning('Product not saved to Zoho Inventory as item "' . $inventoryItem['name'] . '" already exists with sku "' . $inventoryItem['sku']. '"');
             return;
           } else {
             $this->_messageManager->addNotice('Zoho Inventory item "' . $inventoryItem['name']  . '" has been linked');
