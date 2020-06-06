@@ -94,7 +94,11 @@ class SalesOrderSaveAfter implements ObserverInterface {
           }
           break;
 
-        case \Magento\Sales\Model\Order::STATE_PROCESSING:
+        case \Magento\Sales\Model\Order::STATE_PENDING_PAYMENT:
+          // Do nothing here as this seems to only occur with on-line payments which do not impact the Zoho workflow
+          break;
+
+          case \Magento\Sales\Model\Order::STATE_PROCESSING:
           // In the event no Zoho sales order has been created, create one
           if (!$zohoSalesOrderManagement->getSalesOrderId()) {
             $zohoSalesOrderManagement = $this->_zohoOrderManagement->createSalesOrder($zohoSalesOrderManagement, $order, $soRef);
@@ -114,12 +118,27 @@ class SalesOrderSaveAfter implements ObserverInterface {
           $this->_zohoShipping->createShipment($zohoSalesOrderManagement, $order);
           break;
 
+        case \Magento\Sales\Model\Order::STATE_CLOSED:
+          // This is a refund. Zoho integration is captured by SalesOrderCreditCreditmemoSaveAfter
+          break;
+
         case \Magento\Sales\Model\Order::STATE_CANCELED:
           // Order cancelled so delete all Zoho documents and any state between Magento and Zoho
-          $this->_zohoOrderManagement->deleteAll($zohoSalesOrderManagement);
-          $this->_zohoSalesOrderManagementRepository->delete($zohoSalesOrderManagement);
+          try {
+            $this->_zohoOrderManagement->deleteAll($zohoSalesOrderManagement);
+            $this->_zohoSalesOrderManagementRepository->delete($zohoSalesOrderManagement);
+          } catch (\Exception $e) {
+            $this->_logger->error(__('Unable to delete all Zoho transactions'), ['exception' => $e]);
+            throw $e;
+          }
           break;
-      }
+
+        case \Magento\Sales\Model\Order::STATE_HOLDED:
+          break;
+
+        case \Magento\Sales\Model\Order::STATE_PAYMENT_REVIEW:
+          break;
+        }
 
     } catch (\Exception $e) {
       $this->_logger->error(__('Error processing sales order in state ') . $order->getStatusLabel(), ['exception' => $e]);

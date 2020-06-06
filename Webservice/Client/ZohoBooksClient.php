@@ -194,6 +194,18 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   /**
   * @inheritdoc
   */
+  public function getInvoice($invoiceId) {
+    try {
+      return $this->callZoho(self::INVOICES_API . '/' . $invoiceId, self::GET, [])['invoice'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getInvoice'), ['exception' => $e]);
+      throw $e;
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */
   public function convertSalesOrderToInvoice($salesOrderId) {
     try {
       return $this->callZoho(self::INVOICES_API .'/fromsalesorder' , self::POST, ['salesorder_id' => $salesOrderId])['invoice'];
@@ -305,4 +317,27 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
       throw $e;
     }
   }
+
+  /**
+  * @inheritdoc
+  */
+  public function addCreditNote($invoiceId, $creditNote) {
+    try {
+      return $creditNote = $this->callZoho(self::CREDIT_NOTES_API, self::POST, [
+          'invoice_id' => $invoiceId,
+          'JSONString' => json_encode($creditNote, true)
+        ])['creditnote'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: addCreditNote'), ['exception' => $e]);
+      throw $e;
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function deleteCreditNote($creditNoteId) {
+    
+  }
+
 }

@@ -49,7 +49,7 @@ interface ZohoOrderManagementInterface {
   * @param RTech\Zoho\Data\ZohoSalesOrderManagementInterface $zohoSalesOrderManagement
   * @param Magento\Sales\Model\Order $order
   * @param string|null $ref
-  * @return @return RTech\Zoho\Data\ZohoSalesOrderManagementInterface
+  * @return RTech\Zoho\Data\ZohoSalesOrderManagementInterface
   */
   public function createSalesOrder($zohoSalesOrderManagement, $order, $ref);
 
@@ -65,7 +65,7 @@ interface ZohoOrderManagementInterface {
   *
   * @param RTech\Zoho\Data\ZohoSalesOrderManagementInterface $zohoSalesOrderManagement
   * @param Magento\Sales\Model\Order $order
-  * @return @return RTech\Zoho\Data\ZohoSalesOrderManagementInterface
+  * @return RTech\Zoho\Data\ZohoSalesOrderManagementInterface
   */
   public function createInvoice($zohoSalesOrderManagement, $order);
 
@@ -75,4 +75,22 @@ interface ZohoOrderManagementInterface {
   * @param RTech\Zoho\Data\ZohoSalesOrderManagementInterface $zohoSalesOrderManagement
   */
   public function deleteAll($zohoSalesOrderManagement);
+
+  /**
+  * Used to determine if refund request is against goods that have been returned wityhin Zoho
+  *
+  * @param RTech\Zoho\Data\ZohoSalesOrderManagementInterface $zohoSalesOrderManagement
+  * @param Magento\Sales\Model\Order\Creditmemo $creditmemo
+  * @return RTech\Zoho\Data\ZohoOrderManagementInterface
+  * @throws Magento\Framework\Exception\LocalizedException
+  */
+  public function isRefundAllowed($zohoSalesOrderManagement, $creditmemo);
+
+  /**
+  * Create a Zoho credit note
+  *
+  * @param RTech\Zoho\Data\ZohoOrderManagementInterface $zohoOrder
+  * @param Magento\Sales\Model\Order\Creditmemo $creditmemo
+  */
+  public function createCreditNote($zohoOrder, $creditmemo);
 }

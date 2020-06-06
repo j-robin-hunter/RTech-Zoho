@@ -11,6 +11,7 @@ interface ZohoSalesOrderManagementInterface {
   const ESTIMATE_ID = 'estimate_id';
   const SALES_ORDER_ID = 'sales_order_id';
   const INVOICE_ID = 'invoice_id';
+  const CREDIT_NOTE_ID = 'credit_note_id';
 
   /**
   * Get order id
@@ -86,4 +87,19 @@ interface ZohoSalesOrderManagementInterface {
   * @return $this
   */
   public function setInvoiceId($invoioceId);
+
+  /**
+  * Get Zoho credit note id
+  *
+  * @return string|null
+  */
+  public function getCreditNoteId();
+
+  /**
+  * Set Zoho credit note id
+  *
+  * @param string $creditNoteId
+  * @return $this
+  */
+  public function setCreditNoteId($creditNoteId);
 }

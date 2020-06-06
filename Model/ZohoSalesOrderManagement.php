@@ -98,4 +98,18 @@ class ZohoSalesOrderManagement extends AbstractModel implements IdentityInterfac
   public function setInvoiceId($invoiceId) {
     return $this->setData(self::INVOICE_ID, $invoiceId);
   }
+
+  /**
+  * @inheritdoc
+  */
+  public function getCreditNoteId() {
+    return $this->getData(self::CREDIT_NOTE_ID);
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function setCreditNoteId($creditNoteId) {
+    return $this->setData(self::CREDIT_NOTE_ID, $creditNoteId);
+  }
 }

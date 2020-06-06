@@ -32,4 +32,11 @@
     <plugin name="addressZohoPlugin" type="RTech\Zoho\Plugin\AddressZohoPlugin"/>
   </type>
 
+  <type name="Magento\Sales\Api\OrderRepositoryInterface">
+    <plugin name="orderRepositoryZohoPlugin" type="RTech\Zoho\Plugin\OrderRepositoryZohoPlugin"/>
+  </type>
+
+  <type name="Magento\Sales\Api\CreditmemoManagementInterface">
+    <plugin name="creditmemoManagementZohoPlugin" type="RTech\Zoho\Plugin\CreditmemoManagementZohoPlugin"/>
+  </type>
 </config>

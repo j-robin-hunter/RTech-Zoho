@@ -49,7 +49,14 @@ interface ZohoInventoryClientInterface {
   */
   public function packageAdd($salesOrderId, $package);
 
-    /**
+  /**
+  * Delete a Zoho Inventory package
+  *
+  * @param int $packageId
+  */
+  public function packageDelete($packageId);
+
+  /**
   * Add a shipment to Zoho Inventory
   *
   * @param array $package
@@ -57,6 +64,21 @@ interface ZohoInventoryClientInterface {
   * @return array
   */
   public function shipmentAdd($package, $shipment);
+
+  /**
+  * Get a Zoho shipment
+  *
+  * @param string $shipmentId
+  * @return array
+  */
+  public function getShipment($shipmentId);
+
+  /**
+  * Delete a Zoho Inventory shipment
+  *
+  * @param int $shipmentId
+  */
+  public function shipmentDelete($shipmentId);
 
   /**
   * Get a Zoho Inventory item by name
@@ -215,4 +237,26 @@ interface ZohoInventoryClientInterface {
   * return array
   */
   public function imageDelete($itemId);
+
+  /**
+  * Get Zoho sales return
+  *
+  * @param int $returnId
+  * return array
+  */  
+  public function getSalesReturn($returnId);
+
+  /**
+  * Delete Zoho sales return
+  *
+  * @param int $returnId
+  */  
+  public function salesReturnDelete($returnId);
+
+  /**
+  * Delete Zoho sales return receivable
+  *
+  * @param int $receivableId
+  */  
+  public function salesReturnReceivableDelete($receivableId);
 }

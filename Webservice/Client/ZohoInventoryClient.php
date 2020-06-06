@@ -89,6 +89,18 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   /**
   * @inheritdoc
   */
+  public function packageDelete($packageId) {
+    try {
+      $this->callZoho(self::PACKAGES_API . '/' . $packageId, self::DELETE, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: packageDelete'), ['exception' => $e]);
+      throw $e;
+    }
+  }
+  
+  /**
+  * @inheritdoc
+  */
   public function shipmentAdd($package, $shipment) {
     try {
       return $this->callZoho(self::SHIPMENTS_API, self::POST, [
@@ -98,6 +110,30 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
       ])['shipmentorder'];
     } catch (\Exception $e) {
       $this->_logger->error(__('Zoho API Error: shipmentAdd'), ['exception' => $e]);
+      throw $e;
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function getShipment($shipmentId) {
+    try {
+      return $this->callZoho(self::SHIPMENTS_API . '/' . $shipmentId, self::GET, [])['shipmentorder'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getShipment'), ['exception' => $e]);
+      throw $e;
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function shipmentDelete($shipmentId) {
+    try {
+      $this->callZoho(self::SHIPMENTS_API . '/' . $shipmentId, self::DELETE, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: shipmentDelete'), ['exception' => $e]);
       throw $e;
     }
   }
@@ -349,6 +385,42 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
       return $this->callZoho(self::ITEMS_API . '/' . $itemId . '/image', self::DELETE, []);
     } catch (\Exception $e) {
       $this->_logger->error(__('Zoho API Error: imageDelete'), ['exception' => $e]);
+      throw $e;
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */ 
+  public function getSalesReturn($returnId) {
+    try {
+      return $this->callZoho(self::SALES_RETURN_API . '/' . $returnId, self::GET, [])['salesreturn'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getSalesReturn'), ['exception' => $e]);
+      throw $e;
+    }    
+  }
+  
+  /**
+  * @inheritdoc
+  */   
+  public function salesReturnDelete($returnId) {
+    try {
+      return $this->callZoho(self::SALES_RETURN_API . '/' . $returnId, self::DELETE, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: salesReturnDelete'), ['exception' => $e]);
+      throw $e;
+    }    
+  }
+
+  /**
+  * @inheritdoc
+  */ 
+  public function salesReturnReceivableDelete($receivableId) {
+    try {
+      return $this->callZoho(self::SALES_RETURN_RECEIVABLE_API . '/' . $receivableId, self::DELETE, []);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: salesReturnReceivableDelete'), ['exception' => $e]);
       throw $e;
     }
   }

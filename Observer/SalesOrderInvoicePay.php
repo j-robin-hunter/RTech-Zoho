@@ -30,8 +30,8 @@ class SalesOrderInvoicePay implements ObserverInterface {
     $invoice = $observer->getEvent()->getInvoice();
     $order = $invoice->getOrder();
 
-    $order->setTotalPaid(0);
-    $order->setBaseTotalPaid(0);
+    //$order->setTotalPaid(0);
+    //$order->setBaseTotalPaid(0);
   }
 
 }

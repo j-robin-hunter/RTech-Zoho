@@ -24,6 +24,9 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
   const PACKAGES_API = 'packages';
   const SHIPMENTS_API = 'shipmentorders';
   const TAXES_API = 'settings/taxes';
+  const CREDIT_NOTES_API = 'creditnotes';
+  const SALES_RETURN_API = 'salesreturns';
+  const SALES_RETURN_RECEIVABLE_API = 'salesreturnreceives';
 
   const GET = \Zend\Http\Request::METHOD_GET;
   const POST = \Zend\Http\Request::METHOD_POST;

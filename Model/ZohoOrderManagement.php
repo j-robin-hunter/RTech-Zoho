@@ -8,11 +8,15 @@ namespace RTech\Zoho\Model;
 use RTech\Zoho\Api\Data\ZohoOrderManagementInterface;
 use RTech\Zoho\Api\Data\ZohoSalesOrderManagementInterface;
 use RTech\Zoho\Webservice\Client\ZohoBooksClient;
+use RTech\Zoho\Webservice\Client\ZohoInventoryClient;
 use Magento\Framework\Exception\NoSuchEntityException;
+use RTech\Zoho\Webservice\Exception\ZohoItemNotFoundException;
+use Magento\Framework\Exception\LocalizedException;
 
 class ZohoOrderManagement implements ZohoOrderManagementInterface {
 
-  protected $_zohoClient;
+  protected $_zohoBooksClient;
+  protected $_zohoInventoryClient;
   protected $_zohoOrderContact;
   protected $_zohoInventoryRepository;
   protected $_zohoShippingSkuId;
@@ -37,7 +41,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     \RTech\Zoho\Model\ZohoSalesOrderManagementFactory $zohoSalesOrderManagementFactory,
     \Magento\Customer\Model\Session $customerSession
   ) {
-    $this->_zohoClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
+    $this->_zohoBooksClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
+    $this->_zohoInventoryClient = new ZohoInventoryClient($configData, $zendClient, $storeManager);
     $this->_zohoInventoryRepository = $zohoInventoryRepository;
     $this->_zohoOrderContact = $zohoOrderContact;
 
@@ -66,8 +71,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'terms' => $this->_estimateTerms
     ];
     $estimate['line_items'] = $this->createLineitems($quote, $shippingAmount);
-    $zohoEstimate = $this->_zohoClient->addEstimate($estimate);
-    $this->_zohoClient->markEstimateSent($zohoEstimate['estimate_id']);
+    $zohoEstimate = $this->_zohoBooksClient->addEstimate($estimate);
+    $this->_zohoBooksClient->markEstimateSent($zohoEstimate['estimate_id']);
 
     return $zohoEstimate;
   }
@@ -94,8 +99,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
 
     $estimate['line_items'] = $this->createLineitems($order, $order->getBaseShippingAmount());
 
-    $zohoEstimate = $this->_zohoClient->addEstimate($estimate);
-    $this->_zohoClient->markEstimateSent($zohoEstimate['estimate_id']);
+    $zohoEstimate = $this->_zohoBooksClient->addEstimate($estimate);
+    $this->_zohoBooksClient->markEstimateSent($zohoEstimate['estimate_id']);
 
     $zohoSalesOrderManagement = $this->_zohoSalesOrderManagementFactory->create();
     $zohoSalesOrderManagement->setData([
@@ -116,7 +121,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'terms' => $this->_estimateTerms
     ];
     $estimate['line_items'] = $this->createLineitems($source, $shippingAmount);
-    $zohoEstimate = $this->_zohoClient->updateEstimate($estimateId, $estimate);
+    $zohoEstimate = $this->_zohoBooksClient->updateEstimate($estimateId, $estimate);
 
     return $zohoEstimate;
   }
@@ -126,7 +131,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   */
   public function acceptEstimate($zohoSalesOrderManagement) {
     $estimateId = $zohoSalesOrderManagement->getEstimateId();
-    $this->_zohoClient->markEstimateAccepted($estimateId);
+    $this->_zohoBooksClient->markEstimateAccepted($estimateId);
   }
 
   /**
@@ -146,7 +151,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     }
     $salesOrder['line_items'] = $this->createLineitems($order, $order->getBaseShippingAmount());
 
-    $zohoSalesOrder = $this->_zohoClient->addSalesOrder($salesOrder);
+    $zohoSalesOrder = $this->_zohoBooksClient->addSalesOrder($salesOrder);
 
     $zohoSalesOrderManagement->setSalesOrderId($zohoSalesOrder['salesorder_id']);
     return $this->_zohoSalesOrderManagementRepository->save($zohoSalesOrderManagement);
@@ -157,7 +162,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   */
   public function openSalesOrder($zohoSalesOrderManagement) {
     $salesOrderId = $zohoSalesOrderManagement->getSalesOrderId();
-    $this->_zohoClient->markSalesOrderOpen($salesOrderId);
+    $this->_zohoBooksClient->markSalesOrderOpen($salesOrderId);
   }
 
   /**
@@ -165,10 +170,10 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   */
   public function createInvoice($zohoSalesOrderManagement, $order) {
     // Get payment terms
-    $contact = $this->_zohoClient->getContact($zohoSalesOrderManagement->getZohoId());
+    $contact = $this->_zohoBooksClient->getContact($zohoSalesOrderManagement->getZohoId());
 
     // Create invoice from sales order
-    $zohoInvoice = $this->_zohoClient->convertSalesOrderToInvoice($zohoSalesOrderManagement->getSalesOrderId());
+    $zohoInvoice = $this->_zohoBooksClient->convertSalesOrderToInvoice($zohoSalesOrderManagement->getSalesOrderId());
 
     // Update invoice to set reference number and notes
     $comments = '';
@@ -188,8 +193,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'terms' => $this->_invoiceTerms
     ];
 
-    $zohoInvoice = $this->_zohoClient->updateInvoice($zohoInvoice['invoice_id'], $invoice);
-    $this->_zohoClient->markInvoiceSent($zohoInvoice['invoice_id']);
+    $zohoInvoice = $this->_zohoBooksClient->updateInvoice($zohoInvoice['invoice_id'], $invoice);
+    $this->_zohoBooksClient->markInvoiceSent($zohoInvoice['invoice_id']);
 
     $zohoSalesOrderManagement->setInvoiceId($zohoInvoice['invoice_id']);
     return $this->_zohoSalesOrderManagementRepository->save($zohoSalesOrderManagement);
@@ -199,23 +204,159 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   * @inheritdoc
   */
   public function deleteAll($zohoSalesOrderManagement) {
-    $this->_zohoClient->deleteInvoice($zohoSalesOrderManagement->getInvoiceId());
-    $this->_zohoClient->deleteSalesOrder($zohoSalesOrderManagement->getSalesOrderId());
-    $this->_zohoClient->deleteEstimate($zohoSalesOrderManagement->getEstimateId());
+    try {
+      $this->_zohoBooksClient->deleteInvoice($zohoSalesOrderManagement->getInvoiceId());
+    } catch (ZohoItemNotFoundException $e) {
+      // ignore as this will only occur if there is no Zoho invoice
+    } catch (\Exception $e) {
+      throw $e;
+    }
+    try {
+      // Get the sales order ....
+      // If is has any sales returns delete and receivables from each as well as the sales return and then ....
+      // If it has any package delete any shipments from each as well as the package and then ....
+      // Delete the sales order
+      $zohoSalesOrder = $this->_zohoInventoryClient->getSalesOrder($zohoSalesOrderManagement->getSalesOrderId());
+      foreach ($zohoSalesOrder['salesreturns'] ?? [] as $returns) {
+        $zohoReturns = $this->_zohoInventoryClient->getSalesReturn($returns['salesreturn_id']);
+        foreach ($zohoReturns['salesreturnreceives'] ?? [] as $returnable) {
+          $this->_zohoInventoryClient->salesReturnReceivableDelete($returnable['receive_id']);
+        }
+        $this->_zohoInventoryClient->salesReturnDelete($returns['salesreturn_id']);
+      }
+      foreach ($zohoSalesOrder['packages'] ?? [] as $package) {
+        $this->_zohoInventoryClient->shipmentDelete($package['shipment_id']);
+        $this->_zohoInventoryClient->packageDelete($package['package_id']);
+      }
+      $this->_zohoBooksClient->deleteSalesOrder($zohoSalesOrderManagement->getSalesOrderId());
+    } catch (ZohoItemNotFoundException $e) {
+      // ignore as this will only occur if there is no Zoho sales order
+    }
+    try {
+      $this->_zohoBooksClient->deleteEstimate($zohoSalesOrderManagement->getEstimateId());
+    } catch (ZohoItemNotFoundException $e) {
+      // ignore as this will only occur if there is no Zoho estimate
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function isRefundAllowed($zohoSalesOrderManagement, $creditmemo) {
+    $zohoOrder = $this->_zohoInventoryClient->getSalesOrder($zohoSalesOrderManagement->getSalesOrderId());
+    foreach ($creditmemo->getAllItems() as $item) {
+      $orderItem = $item->getOrderItem();
+      $productId = $orderItem->getProductId();
+      $zohoItemId  = $this->_zohoInventoryRepository->getById($productId)->getZohoId();
+      $zohoOrderLine = array_search($zohoItemId, array_column($zohoOrder['line_items'], 'item_id'));
+      if ($zohoOrderLine !== false) {
+        $zohoOrderItem = $zohoOrder['line_items'][$zohoOrderLine];
+        $quantityShipped = $zohoOrderItem['quantity_shipped'] ?? 0;
+        $quantityReturned = $zohoOrderItem['quantity_returned'] ?? 0;
+        if ($quantityShipped > 0 && ($item->getQty() - $quantityReturned) != 0) {
+          throw new LocalizedException(
+            __('Unable to create credit memo as there is no matching Zoho sales return for %1', 
+            sprintf(':  qty %d - %s', $item->getQty(), $zohoOrder['line_items'][$zohoOrderLine]['name'])));
+        }
+      }
+    }
+    foreach ($zohoOrder['salesreturns'] ?? [] as $salesReturn) {
+      $zohoSalesReturn = $this->_zohoInventoryClient->getSalesReturn($salesReturn['salesreturn_id']);
+      foreach ($zohoSalesReturn['line_items'] as $lineItem) {
+        if ($lineItem['quantity'] != $lineItem['quantity_received']) {
+          throw new LocalizedException(__('Unable to create credit memo as not all Zoho sales return items have been returned to stock'));
+        }
+      }
+    }
+    return $zohoOrder;
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function createCreditNote($zohoOrder, $creditmemo) {
+    // Update credit note to set notes
+    $comments = '';
+    foreach ($creditmemo->getComments() as $comment) {
+      $comments = strlen($comments) > 0 ? '\r\n\r\n' . $comment->getComment() : $comment->getComment();
+    }
+
+    $creditNote = [
+      'customer_id' => $zohoOrder['customer_id'],
+      'date' => date('Y-m-d'),
+      'notes' => $comments,
+      'reference_number' => $zohoOrder['salesorder_number'] ?? sprintf('web-%06d', $creditmemo->getOrder()->getIncrementId()),
+      'is_inclusive_tax' => false,
+      'line_items' => []
+    ];
+    foreach ($creditmemo->getAllItems() as $item) {
+      $orderItem = $item->getOrderItem();
+      $productId = $orderItem->getProductId();
+      $zohoItemId  = $this->_zohoInventoryRepository->getById($productId)->getZohoId();
+      $zohoOrderLine = array_search($zohoItemId, array_column($zohoOrder['line_items'], 'item_id'));
+      if ($zohoOrderLine !== false) {
+        $zohoOrderItem = $zohoOrder['line_items'][$zohoOrderLine];
+        if ($item->getQty() > ($zohoOrderItem['quantity_shipped'] - $zohoOrderItem['quantity_returned'])) {
+          throw new LocalizedException(__('Unable to create credit memo as not all creditable items have been returned in Zoho Inventory'));
+        }
+        $creditNote['line_items'][] = [
+          'item_id' => $zohoItemId,
+          'name' => $zohoOrderItem['name'] ?? '',
+          'quantity' => $item->getQty(),
+          'rate' => $item->getPrice(),
+          'discount' => $zohoOrderItem['discount'] ?? '',
+          'tax_id' => $zohoOrderItem['tax_id'] ?? ''
+        ];
+      }
+    }
+
+    $zohoShippingLine = array_search($this->_zohoShippingSkuId, array_column($zohoOrder['line_items'], 'item_id'));
+    if ($zohoShippingLine !== false && $creditmemo->getBaseShippingAmount() > 0) {
+      $zohoOrderShipping = $zohoOrder['line_items'][$zohoShippingLine];
+      $creditNote['line_items'][] = [
+        'item_id' => $this->_zohoShippingSkuId,
+        'name' => $zohoInvoiceShipping['name'] ?? '',
+        'quantity' => $zohoInvoiceShipping['quantity'] ?? 1,
+        'rate' => $creditmemo->getBaseShippingAmount(),
+        'tax_id' => $zohoOrderShipping['tax_id'] ?? ''
+      ];
+    }
+    
+    if ($creditmemo->getAdjustmentPositive() != 0) {
+      $creditNote['line_items'][] = [
+        'description' => __('Refund adjustment'),
+        'rate' => $creditmemo->getAdjustmentPositive(),
+      ];
+    }
+
+    if ($creditmemo->getAdjustmentNegative() != 0) {
+      $creditNote['line_items'][] = [
+        'description' => __('Refund fee'),
+        'rate' => -$creditmemo->getAdjustmentNegative(),
+      ];
+    }
+
+    $zohoSalesOrderManagement = $this->_zohoSalesOrderManagementRepository->getById($creditmemo->getOrderId());
+    $zohoCreditNote = $this->_zohoBooksClient->addCreditNote($zohoSalesOrderManagement->getInvoiceId(), $creditNote);
   }
 
   private function createLineitems($items, $shippingAmount) {
-    $taxes = $this->_zohoClient->getTaxes();
+    $taxes = $this->_zohoBooksClient->getTaxes();
     $zeroRate = $taxes[array_search(0, array_column($taxes, 'tax_percentage'))]['tax_id'];
     $euVat = $this->_zohoOrderContact->getVatTreatment($items) == 'eu_vat_registered' ? true : false;
 
     $lineItems = array();
     foreach ($items->getAllItems() as $item) {
-      if ($item->getProductType() != 'configurable') {
+      if ($item->getProductType() != 'configurable' && $item->getProductType() != 'bundle') {
         $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
 
-        // If this is a child we now need the parent to get the price etc.
-        $item = $item->getParentItem() ?: $item;
+        // If this is a child we now need the parent to get the price if this
+        // is a configurable product. If the parent is a bundle product then 
+        // we use the price of the item.
+        $parentItem = $item->getParentItem();
+        if ($parentItem && $parentItem == 'configurable') {
+          $item = $parentItem;
+        }
         $lineitem = [
           'item_id' => $zohoInventory->getZohoId(),
           'quantity' => $item->getQtyOrdered(),
