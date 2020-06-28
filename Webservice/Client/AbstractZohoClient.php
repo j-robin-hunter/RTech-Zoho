@@ -91,20 +91,34 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
       \Zend\Http\Response::STATUS_CODE_500,
     ];
     if (in_array($response->getStatusCode(), $errorCodes)) {
-      $zohoCode = json_decode($response->getBody(), true)['code'];
-      if ($zohoCode == self::NO_ZOHO_INVENTORY_CODE || $response->getStatusCode() == \Zend\Http\Response::STATUS_CODE_404) {
-        throw ZohoItemNotFoundException::create($response->getBody());
+      $zohoError = json_decode($response->getBody(), true);
+      $zohoErrorCode = $zohoError['code'];
+      $zohoErrorMessage = $zohoError['message'];
+      if ($zohoErrorCode == self::NO_ZOHO_INVENTORY_CODE || $response->getStatusCode() == \Zend\Http\Response::STATUS_CODE_404) {
+        throw new ZohoItemNotFoundException($zohoErrorMessage, $zohoErrorCode);
       }
-      if ($zohoCode == self::EXISTS_ZOHO_INVENTORY_CODE) {
-        throw ZohoItemExistsException::create($response->getBody());
+      if ($zohoErrorCode == self::EXISTS_ZOHO_INVENTORY_CODE) {
+        throw new ZohoItemExistsException($zohoErrorMessage, $zohoErrorCode);
       }
-      throw ZohoOperationException::create($response->getBody());
+      throw new ZohoOperationException($zohoErrorMessage, $zohoErrorCode);
     }
     // unknown error response codes
     if (!$response->isSuccess()) {
       throw new ZohoCommunicationException($response->getBody());
     }
     return json_decode($response->getBody(), true);
+  }
+
+  /**
+  * @inheritdoc
+  */
+  public function getInvoice($invoiceId) {
+    try {
+      return $this->callZoho(self::INVOICES_API . '/' . $invoiceId, self::GET, [])['invoice'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: getInvoice'), ['exception' => $e]);
+      throw $e;
+    }
   }
 
   /**

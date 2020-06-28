@@ -138,13 +138,6 @@ interface ZohoBooksClientInterface {
   public function markInvoiceSent($invoiceId);
 
   /**
-  * Get an invoice in Zoho Books
-  *
-  * @param string $invoiceId
-  */
-  public function getInvoice($invoiceId);
-
-  /**
   * Delete an invoice in Zoho Books
   *
   * @param string $invoiceId
@@ -187,18 +180,11 @@ interface ZohoBooksClientInterface {
   public function deleteAddress($contactId, $address);
 
   /**
-  * Add a credit note to Zoho Books
+  * Add a credit note to Zoho Books based on an invoice
   *
   * @param string $invoiceId
   * @param array $creditNote
   * @return array
   */
   public function addCreditNote($invoiceId, $creditNote);
-
-  /**
-  * Delete a credit note from Zoho Books
-  *
-  * @param array $creditNoteId
-  */
-  public function deleteCreditNote($creditNoteId);
 }

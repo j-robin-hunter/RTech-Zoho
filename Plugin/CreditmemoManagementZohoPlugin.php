@@ -31,15 +31,18 @@ class CreditmemoManagementZohoPlugin {
   ) {
     try {
       // Get the existing state of the order between Magento and Zoho.
-      // The check will throw an error if the refund is not allow otherwise it will return a Zoho order
       $zohoSalesOrderManagement = $this->_zohoSalesOrderManagementRepository->getById($creditmemo->getOrderId());
-      $zohoOrder = $this->_zohoOrderManagement->isRefundAllowed($zohoSalesOrderManagement, $creditmemo);
+
+      // Order refunded so create a Zoho credit note
+      // If this cannot be done a Localized error will be thrown which will prevent Magento
+      // from creatimng the refund. This is important to prevent an online refund
+      // refunding the customer to their credit/debit card potentially without having returned goods
+      $this->_zohoOrderManagement->createCreditNote($zohoSalesOrderManagement, $creditmemo);
 
       // Call refund to execute the Magento refund
       $savedCreditmemo = $refund($creditmemo, $offlineRequested);
-
-      // Order refunded so create a Zoho credit note
-      $this->_zohoOrderManagement->createCreditNote($zohoOrder, $creditmemo);
+      
+      return $savedCreditmemo;
     } catch (LocalizedException $e) {
       throw $e;
     } catch (\Exception $e) {

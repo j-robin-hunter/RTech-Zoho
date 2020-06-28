@@ -41,7 +41,7 @@ class SavedQuoteSavedAfter implements ObserverInterface {
       }
     } catch (\Exception $e) {
       // log the error but do not cascade as this will impact the customer
-      // experience. The quote will not be sent ot Zoho but this can be managed
+      // experience. The quote will not be sent to Zoho but this can be managed
       // if the customer queries the quote
       $this->_logger->error(__('Error in SavedQuoteSavedAfter %1'),  ['exception' => $e]);
       throw $e;

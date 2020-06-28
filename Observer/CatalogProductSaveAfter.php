@@ -148,9 +148,15 @@ class CatalogProductSaveAfter implements ObserverInterface {
       //*****************
       // **** GROUPS ****
       //*****************
+
+      // Only process configurable product as these are similar to Zoho item groups
+      // while bundled products are not similar to Zoho composite items which  are essentially
+      // a product built fromn sub-products rather than a product  built from a configuration
+      // of sub-products
       if (isset($zohoItemId)) {
 
         // EXISTING PARENT PRODUCTS
+        /*
         if ($product->getTypeId() == self::BUNDLE_TYPE) {
           try {
             $inventoryComposite = $this->_zohoClient->getCompositeItem($zohoItemId);
@@ -174,6 +180,8 @@ class CatalogProductSaveAfter implements ObserverInterface {
             $this->_zohoInventoryRepository->save($zohoInventory);
           }
         } else {
+        */
+        if ($product->getTypeId == self::CONFIGURABLE_TYPE) {
           try {
             $inventoryGroup = $this->_zohoClient->getItemGroup($zohoItemId);
             $inventoryGroup = $this->getGroupArray($product, $inventoryGroup);
@@ -194,6 +202,7 @@ class CatalogProductSaveAfter implements ObserverInterface {
           }
         }
       } else {
+        /*
         if ($product->getTypeId() == self::BUNDLE_TYPE) {
           $bundle = $this->getBundleArray($product);
           $inventoryComposite = $this->_zohoClient->itemCompositeAdd($bundle);
@@ -206,6 +215,8 @@ class CatalogProductSaveAfter implements ObserverInterface {
           ]);
           $this->_zohoInventoryRepository->save($zohoInventory);
         } else {
+        */
+        if ($product->getTypeId() == self::CONFIGURABLE_TYPE) {
           $group = $this->getGroupArray($product);
           $inventoryGroup = $this->_zohoClient->itemGroupAdd($group);
           $zohoInventory = $this->_zohoInventoryFactory->create();

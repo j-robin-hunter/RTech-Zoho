@@ -259,4 +259,21 @@ interface ZohoInventoryClientInterface {
   * @param int $receivableId
   */  
   public function salesReturnReceivableDelete($receivableId);
+
+  /**
+  * Add a credit note to Zoho Books based on a sales return
+  *
+  * @param string $salesReturnId
+  * @param array $creditNote
+  * @return array
+  */
+  public function addCreditNote($salesReturnId, $creditNote);
+
+  /**
+  * Apply credit notes to an invoice
+  *
+  * @param string $creditNoteId
+  * @param array $amount
+  */
+  public function applyCredit($creditNoteId, $credits);
 }

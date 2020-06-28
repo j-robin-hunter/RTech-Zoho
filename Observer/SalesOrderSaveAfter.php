@@ -13,7 +13,6 @@ class SalesOrderSaveAfter implements ObserverInterface {
 
   protected $_zohoSalesOrderManagementRepository;
   protected $_zohoOrderManagement;
-  protected $_zohoShipping;
   protected $_zohoCustomerRepository;
   protected $_zohoSalesOrderManagementFactory;
   protected $_objectManager;
@@ -22,7 +21,6 @@ class SalesOrderSaveAfter implements ObserverInterface {
   public function __construct(
     \RTech\Zoho\Model\ZohoSalesOrderManagementRepository $zohoSalesOrderManagementRepository,
     \RTech\Zoho\Model\ZohoOrderManagement $zohoOrderManagement,
-    \RTech\Zoho\Model\ZohoShipping $zohoShipping,
     \RTech\Zoho\Model\ZohoCustomerRepository $zohoCustomerRepository,
     \RTech\Zoho\Model\ZohoSalesOrderManagementFactory $zohoSalesOrderManagementFactory,
     \Magento\Framework\ObjectManagerInterface $objectManager,
@@ -31,7 +29,6 @@ class SalesOrderSaveAfter implements ObserverInterface {
   ) {
     $this->_zohoSalesOrderManagementRepository = $zohoSalesOrderManagementRepository;
     $this->_zohoOrderManagement = $zohoOrderManagement;
-    $this->_zohoShipping = $zohoShipping;
     $this->_zohoCustomerRepository = $zohoCustomerRepository;
     $this->_zohoSalesOrderManagementFactory = $zohoSalesOrderManagementFactory;
     $this->_objectManager = $objectManager;
@@ -114,8 +111,9 @@ class SalesOrderSaveAfter implements ObserverInterface {
           break;
 
         case \Magento\Sales\Model\Order::STATE_COMPLETE:
-          // Order complete and shipment requested. Start the shipment process in Zoho
-          $this->_zohoShipping->createShipment($zohoSalesOrderManagement, $order);
+          // Order complete
+          // Each Magento ship request is handled by the ShipmedntResourceZohoPlugin
+          // which creates a Zoho package and shipment as each NMagento shipment is created
           break;
 
         case \Magento\Sales\Model\Order::STATE_CLOSED:

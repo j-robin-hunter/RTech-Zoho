@@ -8,6 +8,13 @@ namespace RTech\Zoho\Api\Data;
 interface ZohoClientInterface {
 
   /**
+  * Get an invoice in Zoho Books
+  *
+  * @param string $invoiceId
+  */
+  public function getInvoice($invoiceId);
+
+  /**
   * Get all defined Zoho Books taxes
   *
   * @return array

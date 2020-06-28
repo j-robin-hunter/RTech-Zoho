@@ -424,4 +424,31 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
       throw $e;
     }
   }
+
+  /**
+  * @inheritdoc
+  */
+  public function addCreditNote($salesReturnId, $creditNote) {
+    try {
+      return $creditNote = $this->callZoho(self::CREDIT_NOTES_API, self::POST, [
+        'salesreturn_id' => $salesReturnId,
+        'JSONString' => json_encode($creditNote, true)])['creditnote'];
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: addCreditNote'), ['exception' => $e]);
+      throw $e;
+    }
+  }
+
+
+  /**
+  * @inheritdoc
+  */
+  public function applyCredit($creditNoteId, $credits) {
+    try {
+      $this->callZoho(self::CREDIT_NOTES_API . '/' . $creditNoteId . '/invoices', self::POST, ['JSONString' => json_encode($credits, true)]);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: applyCredits'), ['exception' => $e]);
+      throw $e;
+    }
+  }
 }

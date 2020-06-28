@@ -21,12 +21,4 @@
   <event name="customer_delete_before">
     <observer name="zoho_customer_delete_before" instance="RTech\Zoho\Observer\CustomerDeleteBefore"/>
   </event>
-  <event name="sales_order_shipment_save_before">
-    <observer name="zoho_sales_order_shipment_save_before" instance="RTech\Zoho\Observer\SalesOrderShipmentSaveBefore"/>
-  </event>
-  <!--
-  <event name="sales_order_creditmemo_save_after">
-    <observer name="zoho_sales_order_creditmemo_save_after" instance="RTech\Zoho\Observer\SalesOrderCreditmemoSaveAfter"/>
-  </event>
-  -->
 </config>

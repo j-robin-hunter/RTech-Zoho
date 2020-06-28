@@ -70,27 +70,32 @@ interface ZohoOrderManagementInterface {
   public function createInvoice($zohoSalesOrderManagement, $order);
 
   /**
-  * Delete all Zoho Books sales order management documents
+  * Update Magento stock from Zoho inventory stock
   *
-  * @param RTech\Zoho\Data\ZohoSalesOrderManagementInterface $zohoSalesOrderManagement
+  * @param \Magento\Sales\Model\ResourceModel\Order\Shipment $shipment
   */
-  public function deleteAll($zohoSalesOrderManagement);
-
+  public function updateStock($shipment);
+  
   /**
-  * Used to determine if refund request is against goods that have been returned wityhin Zoho
+  * Create Zoho package and shipment
   *
-  * @param RTech\Zoho\Data\ZohoSalesOrderManagementInterface $zohoSalesOrderManagement
-  * @param Magento\Sales\Model\Order\Creditmemo $creditmemo
-  * @return RTech\Zoho\Data\ZohoOrderManagementInterface
-  * @throws Magento\Framework\Exception\LocalizedException
+  * @param \Magento\Sales\Model\ResourceModel\Order\Shipment $shipment
   */
-  public function isRefundAllowed($zohoSalesOrderManagement, $creditmemo);
+  public function createShipment($shipment);
 
   /**
   * Create a Zoho credit note
   *
-  * @param RTech\Zoho\Data\ZohoOrderManagementInterface $zohoOrder
+  * @param RTech\Zoho\Data\ZohoSalesOrderManagementInterface $zohoSalesOrderManagement
   * @param Magento\Sales\Model\Order\Creditmemo $creditmemo
   */
-  public function createCreditNote($zohoOrder, $creditmemo);
+  public function createCreditNote($zohoSalesOrderManagement, $creditmemo);
+
+  /**
+  * Delete all Zoho Books sales order management documents. This will not complete
+  * if an order has payed invoicves or credit notes
+  *
+  * @param RTech\Zoho\Data\ZohoSalesOrderManagementInterface $zohoSalesOrderManagement
+  */
+  public function deleteAll($zohoSalesOrderManagement);
 }

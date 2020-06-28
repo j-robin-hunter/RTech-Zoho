@@ -7,14 +7,7 @@ namespace RTech\Zoho\Webservice\Exception;
 
 class ZohoItemExistsException extends \Exception {
 
-  public static function create($responseBody) {
-    $response = json_decode($responseBody, true);
-    if ($response && isset($response['message'])) {
-      $message = $response['message'];
-    } else {
-      $message = sprintf('API operation failed. Response: "%s"', $responseBody);
-    }
-
-    return new static($message);
+  public function __construct($message, $code = 0, \Exception $previous = null) {
+    parent::__construct($message, $code, $previous);
   }
 }

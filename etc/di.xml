@@ -39,4 +39,8 @@
   <type name="Magento\Sales\Api\CreditmemoManagementInterface">
     <plugin name="creditmemoManagementZohoPlugin" type="RTech\Zoho\Plugin\CreditmemoManagementZohoPlugin"/>
   </type>
+
+  <type name="Magento\Sales\Model\Spi\ShipmentResourceInterface">
+    <plugin name="shipmentResourceZohoPlugin" type="RTech\Zoho\Plugin\ShipmentResourceZohoPlugin"/>
+  </type>  
 </config>

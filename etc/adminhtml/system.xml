@@ -51,10 +51,6 @@
           <label>Endpoint</label>
           <comment>API endpoint URL</comment>
         </field>
-        <field id="shipping_sku" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
-          <label>Shipping SKU</label>
-          <comment>The Zoho Inventory SKU for shipping</comment>
-        </field>
       </group>
 
       <group id="estimate" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
