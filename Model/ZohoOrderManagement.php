@@ -508,6 +508,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
 
         $details['line_items'][] = [
           'item_id' => $zohoInventory->getZohoId(),
+          'name' => $item->getName(),
           'quantity' => $item->getQtyOrdered(),
           'rate' => $item->getPrice(),
           'discount' => sprintf('%01.2f', $item->getDiscountAmount()),
