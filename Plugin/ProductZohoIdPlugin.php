@@ -41,7 +41,12 @@ class ProductZohoIdPlugin {
   ) {
     
     try {
-      $zohoInventory = $this->zohoInventoryRepository->getById($product->getId());
+      // Find the Zoho inventory id for the product unless the product is a bundle
+      // since bundled products are not a Zoho inventory concept as a bundle is
+      // simply a collection of other products 
+      if ($product->getTypeId() != 'bundle') {
+        $zohoInventory = $this->zohoInventoryRepository->getById($product->getId());
+      }
     } catch (NoSuchEntityException $eNoSuchEntityException) {
       // Need to verify that the product is not simply missing from the Zoho Inventory
       // table by verifying that there is no Zoho Inventory product with the same name and sku
