@@ -8,6 +8,7 @@ namespace RTech\Zoho\Observer;
 use RTech\Zoho\Webservice\Client\ZohoInventoryClient;
 use Magento\Framework\Event\ObserverInterface;
 use RTech\Zoho\Webservice\Exception\ZohoOperationException;
+use Magento\Framework\Exception\NoSuchEntityException;
 
 class CatalogProductAttributeUpdateBefore implements ObserverInterface {
   const ENABLED = 1;
@@ -36,15 +37,20 @@ class CatalogProductAttributeUpdateBefore implements ObserverInterface {
     if (isset($observer->getData('attributes_data')['status'])) {
       $status = $observer->getData('attributes_data')['status'];
       foreach ($observer->getData('product_ids') as $productId) {
-        $zohoInventory = $this->_zohoInventoryRepository->getById($productId);
         try {
-          if ($zohoInventory->getZohoType() == self::ZOHO_ITEM) {
-            ($status == self::ENABLED)?$this->_zohoClient->itemSetActive($zohoInventory->getZohoId()):$this->_zohoClient->itemSetInActive($zohoInventory->getZohoId());
-          } else {
-            ($status == self::ENABLED)?$this->_zohoClient->itemGroupSetActive($zohoInventory->getZohoId()):$this->_zohoClient->itemGroupSetInActive($zohoInventory->getZohoId());
+          $zohoInventory = $this->_zohoInventoryRepository->getById($productId);
+          try {
+            if ($zohoInventory->getZohoType() == self::ZOHO_ITEM) {
+              ($status == self::ENABLED)?$this->_zohoClient->itemSetActive($zohoInventory->getZohoId()):$this->_zohoClient->itemSetInActive($zohoInventory->getZohoId());
+            } else {
+              ($status == self::ENABLED)?$this->_zohoClient->itemGroupSetActive($zohoInventory->getZohoId()):$this->_zohoClient->itemGroupSetInActive($zohoInventory->getZohoId());
+            }
+          } catch (\Exception $ex) {
+            $this->_messageManager->addNotice('Unable to change status for product "' . $zohoInventory->getProductName() . '" due to ' . $ex->getMessage());
           }
-        } catch (\Exception $ex) {
-          $this->_messageManager->addNotice('Unable to change status for product "' . $zohoInventory->getProductName() . '" due to ' . $ex->getMessage());
+        } catch(NoSuchEntityException $e) {
+          // Ignore: No Zoho inventory item or group exists for this product id, probably because this 
+          // is a bundled product.
         }
       }
     }

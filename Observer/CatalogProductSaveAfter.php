@@ -69,7 +69,6 @@ class CatalogProductSaveAfter implements ObserverInterface {
       // Treat as a new product
     }
 
-    $t = in_array($product->getTypeId(), self::ITEM_TYPES);
     if (in_array($product->getTypeId(), self::ITEM_TYPES)) {
       //****************
       // **** ITEMS ****
@@ -154,33 +153,6 @@ class CatalogProductSaveAfter implements ObserverInterface {
       // a product built fromn sub-products rather than a product  built from a configuration
       // of sub-products
       if (isset($zohoItemId)) {
-
-        // EXISTING PARENT PRODUCTS
-        /*
-        if ($product->getTypeId() == self::BUNDLE_TYPE) {
-          try {
-            $inventoryComposite = $this->_zohoClient->getCompositeItem($zohoItemId);
-            $bundle = $this->getBundleArray($product, $inventoryComposite);
-            $inventoryComposite = $this->_zohoClient->itemCompositeUpdate($bundle);
-            if ($zohoInventory->getProductName() != $product->getName()) {
-              $zohoInventory->setProductName($product->getName());
-              $this->_zohoInventoryRepository->save($zohoInventory);
-            }
-          } catch (ZohoItemNotFoundException $ex) {
-            // Compiste item has been deleted from or does not exists in Zoho Inventory
-            // Recreate item from current product entry
-            $bundle = $this->getBundleArray($product);
-            $inventoryComposite = $this->_zohoClient->itemCompositeAdd($bundle);
-            $zohoInventory->setData([
-              ZohoInventoryInterface::PRODUCT_ID => $product->getId(),
-              ZohoInventoryInterface::PRODUCT_NAME => $product->getName(),
-              ZohoInventoryInterface::ZOHO_ID => $inventoryComposite['composite_item_id'],
-              ZohoInventoryInterface::ZOHO_TYPE => self::ZOHO_COMPOSITE
-            ]);
-            $this->_zohoInventoryRepository->save($zohoInventory);
-          }
-        } else {
-        */
         if ($product->getTypeId == self::CONFIGURABLE_TYPE) {
           try {
             $inventoryGroup = $this->_zohoClient->getItemGroup($zohoItemId);
@@ -202,20 +174,6 @@ class CatalogProductSaveAfter implements ObserverInterface {
           }
         }
       } else {
-        /*
-        if ($product->getTypeId() == self::BUNDLE_TYPE) {
-          $bundle = $this->getBundleArray($product);
-          $inventoryComposite = $this->_zohoClient->itemCompositeAdd($bundle);
-          $zohoInventory = $this->_zohoInventoryFactory->create();
-          $zohoInventory->setData([
-            ZohoInventoryInterface::PRODUCT_ID => $product->getId(),
-            ZohoInventoryInterface::PRODUCT_NAME => $product->getName(),
-            ZohoInventoryInterface::ZOHO_ID => $inventoryComposite['composite_item_id'],
-            ZohoInventoryInterface::ZOHO_TYPE => self::ZOHO_COMPOSITE
-          ]);
-          $this->_zohoInventoryRepository->save($zohoInventory);
-        } else {
-        */
         if ($product->getTypeId() == self::CONFIGURABLE_TYPE) {
           $group = $this->getGroupArray($product);
           $inventoryGroup = $this->_zohoClient->itemGroupAdd($group);
