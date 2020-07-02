@@ -153,7 +153,7 @@ class CatalogProductSaveAfter implements ObserverInterface {
       // a product built fromn sub-products rather than a product  built from a configuration
       // of sub-products
       if (isset($zohoItemId)) {
-        if ($product->getTypeId == self::CONFIGURABLE_TYPE) {
+        if ($product->getTypeId() == self::CONFIGURABLE_TYPE) {
           try {
             $inventoryGroup = $this->_zohoClient->getItemGroup($zohoItemId);
             $inventoryGroup = $this->getGroupArray($product, $inventoryGroup);

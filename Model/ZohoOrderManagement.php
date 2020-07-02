@@ -244,15 +244,22 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $lineitems = [];
     foreach ($shipment->getItemsCollection() as $item) {
       $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
-      $zohoSolesOrderLine = array_search($zohoInventory->getZohoId(), $zohoSalesOrderItems);
-      if ($zohoSolesOrderLine !== false) {
-        $zohoSalesOrderItem = $zohoSalesOrder['line_items'][$zohoSolesOrderLine];
-        $lineitems[] = [
-          'so_line_item_id' => $zohoSalesOrderItem['line_item_id'],
-          'quantity' => $item->getQty()
-        ];
-      } else {
-        throw new ZohoItemNotFoundException(__('The item %1 cannot be located on the Zoho sales order %2', $item->getName(), $zohoSalesOrder['salesorder_number']));
+      // Can only ship Zoho inventory items not groups.
+
+      // Use the Zoho sales order for details as this will
+      // ensure that the data lines up correctly within Zoho
+      // which will reduce errors
+      if ($zohoInventory->getZohoType() == 'item') {
+        $zohoSolesOrderLine = array_search($zohoInventory->getZohoId(), $zohoSalesOrderItems);
+        if ($zohoSolesOrderLine !== false) {
+          $zohoSalesOrderItem = $zohoSalesOrder['line_items'][$zohoSolesOrderLine];
+          $lineitems[] = [
+            'so_line_item_id' => $zohoSalesOrderItem['line_item_id'],
+            'quantity' => $zohoSalesOrderItem['quantity']
+          ];
+        } else {
+          throw new ZohoItemNotFoundException(__('The item %1 cannot be located on the Zoho sales order %2', $item->getName(), $zohoSalesOrder['salesorder_number']));
+        }
       }
     }
 
@@ -321,49 +328,52 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     foreach ($creditmemo->getAllItems() as $item) {
       // Create a credit note line item for the credit memo using the Zoho invoice
       $creditNoteLineItem = $this->getCreditNoteLineItem($item, $zohoInvoices);
-      if (empty($creditNoteLineItem)) {
-        throw new LocalizedException(__('There is no Zoho invoice for against which credit notes can be raised'));
-      }
+      if (!empty($creditNoteLineItem)) {
+        // Use the invoice line item to locate the sales order line item as this will
+        // provide details relating to quantity invoiced, packed, shipped, cancelled, returned
+        $itemId = $creditNoteLineItem['line_item']['item_id'];
+        $salesOrderLineItem = array_filter($zohoSalesOrder['line_items'], function($a) use ($itemId) {return $a['item_id'] == $itemId;});
+        if (empty($salesOrderLineItem)) {
+          throw new LocalizedException(__('There is a line item missing on the Zoho sales order for %1', $item->getName()));
+        }
 
-      // Use the invoice line item to locate the sales order line item as this will
-      // provide details relating to quantity invoiced, packed, shipped, cancelled, returned
-      $itemId = $creditNoteLineItem['line_item']['item_id'];
-      $salesOrderLineItem = array_filter($zohoSalesOrder['line_items'], function($a) use ($itemId) {return $a['item_id'] == $itemId;});
-      if (empty($salesOrderLineItem)) {
-        throw new LocalizedException(__('There is a line item missing on the Zoho sales order for %1', $item->getName()));
-      }
-
-      // If there are invoiced items that have not been cancelled or shipped then the credit memo can be raised against the Zoho invoice
-      $creditableQty = min(
-        $salesOrderLineItem[0]['quantity_invoiced'] - $salesOrderLineItem[0]['quantity_cancelled'] - $salesOrderLineItem[0]['quantity_shipped'],
-        $item->getQty());
-      if ($creditableQty > 0) {
+        // If there are invoiced items that have not been cancelled or shipped then the credit memo can be raised against the Zoho invoice
+        $key = key($salesOrderLineItem);
+        $creditableQty = min(
+          $salesOrderLineItem[$key]['quantity_invoiced'] - $salesOrderLineItem[$key]['quantity_cancelled'] - $salesOrderLineItem[$key]['quantity_shipped'],
+          $item->getQty());
         $creditNoteLineItem['line_item']['quantity'] = $creditableQty;
-        $creditNoteLineItem['line_item']['rate'] = $item->getPrice();
-        $creditNoteLineItem['line_item']['discount'] = ($item->getDiscountAmount() / $item->getQty()) * $creditableQty;
+        $creditNoteLineItem['line_item']['rate'] = $salesOrderLineItem[$key]['rate'];
+        $creditNoteLineItem['line_item']['discount'] = $salesOrderLineItem[$key]['discount_amount'];
         $creditableItems[$creditNoteLineItem['invoice_id']]['invoice']['line_items'][] = $creditNoteLineItem['line_item'];
-      }
 
-      // If not all items can be raised against the Zoho invoice determine whether a sales return for the item exists
-      // Do not worry if the quantity is wrong as the Zoho credit note create will generate an error if the actual credit
-      // note cannot be raised
-      if ($creditableQty < $item->getQty()) {
-        foreach ($zohoSalesOrder['salesreturns'] as $salesReturn) {
-          $salesReturnLineItem = array_filter($salesReturn['line_items'], function($a) use ($itemId) {
-            return $a['item_id'] == $itemId;
-          });
-          if (!empty($salesReturnLineItem)) {
-            $creditableItems[$creditNoteLineItem['invoice_id']]['return'][] = [
-              'salesreturn_id' => $salesReturn['salesreturn_id'],
-              'item_id' => $salesReturnLineItem[0]['item_id'],
-              'line_item_id' => $salesReturnLineItem[0]['line_item_id'],
-              'quantity' => $item->getQty() - $creditableQty
-            ];
-            break;
+        // If not all items can be raised against the Zoho invoice determine whether a sales return for the item exists
+        // Do not worry if the quantity is wrong as the Zoho credit note create will generate an error if the actual credit
+        // note cannot be raised
+        if ($creditableQty < $item->getQty()) {
+          foreach ($zohoSalesOrder['salesreturns'] as $salesReturn) {
+            $salesReturnLineItem = array_filter($salesReturn['line_items'], function($a) use ($itemId) {
+              return $a['item_id'] == $itemId;
+            });
+            if (!empty($salesReturnLineItem)) {
+              $key = key($salesOrderLineItem);
+              $creditableItems[$creditNoteLineItem['invoice_id']]['return'][] = [
+                'salesreturn_id' => $salesReturn['salesreturn_id'],
+                'item_id' => $salesReturnLineItem[$key]['item_id'],
+                'line_item_id' => $salesReturnLineItem[$key]['line_item_id'],
+                'quantity' => $item->getQty() - $creditableQty
+              ];
+              $creditableQty += $item->getQty();
+              break;
+            }
+          }
+          if ($creditableQty < $item->getQty()) {
+            throw new LocalizedException(__('Zoho sales returns are missing for %1', $item->getName()));
           }
         }
       }
     }
+
 
     // Get any comments to add to the credit notes
     $comments = '';
@@ -388,7 +398,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
         // Having an error is not a problem as this will prevent any Magento on-line credit refund
         foreach ($items['return'] ?? [] as $return) {
           $itemId = $return['item_id'];
-          $lineItem = array_filter($items['invoice']['line_items'], function($a) use ($itemId) {return $a['item_id'] == $itemId;})[0]; 
+          $lineItem = array_filter($items['invoice']['line_items'], function($a) use ($itemId) {return $a['item_id'] == $itemId;});
+          $lineItem = reset($lineItem); 
           $lineItem['quantity'] = $return['quantity'];
           $lineItem['salesreturn_item_id'] = $return['line_item_id'];
           $lineItem['is_item_shipped'] = true;
@@ -412,23 +423,34 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
         // then add any shipping and/or other credits and debits
         reset($creditableItems);
         if ($id === key($creditableItems)) {
-            $creditNote['shipping_charge'] = $creditmemo->getShippingInclTax();
-    
-            if ($creditmemo->getAdjustmentPositive() != 0) {
-              $creditNote['line_items'][] = [
-                'description' => __('Refund adjustment'),
-                'rate' => $creditmemo->getAdjustmentPositive(),
-                'invoice_id' => strval($id)
-              ];
-            }
-    
-            if ($creditmemo->getAdjustmentNegative() != 0) {
-              $creditNote['line_items'][] = [
-                'description' => __('Refund fee'),
-                'rate' => -$creditmemo->getAdjustmentNegative(),
-                'invoice_id' => strval($id)
-              ];
-            }
+          $creditNote['shipping_charge'] = $creditmemo->getShippingInclTax();
+  
+          if ($creditmemo->getAdjustmentPositive() != 0) {
+            $creditNote['line_items'][] = [
+              'description' => __('Refund adjustment'),
+              'rate' => $creditmemo->getAdjustmentPositive(),
+              'invoice_id' => strval($id)
+            ];
+          }
+  
+          if ($creditmemo->getAdjustmentNegative() != 0) {
+            $creditNote['line_items'][] = [
+              'description' => __('Refund fee'),
+              'rate' => -$creditmemo->getAdjustmentNegative(),
+              'invoice_id' => strval($id)
+            ];
+          }
+        }
+        // Set the rate and discount for any line items that have a quantity of 0 to 0
+        foreach ($creditNote['line_items'] as $index => $lineItem) {
+          if (isset($lineItem['quantity']) && $lineItem['quantity'] == 0) {
+            $creditNote['line_items'][$index] = [
+              'description' => $lineItem['name'],
+              'rate' => 0,
+              'quantity' => 0,
+              'account_id' => $lineItem['account_id']
+            ];
+          } 
         }
         $zohoInvoiceCreditNote = $this->_zohoBooksClient->addCreditNote($id, $creditNote);
       }
@@ -578,6 +600,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
             'tax_id' => $invoice['line_items'][$lineItemIndex]['tax_id'],
             'invoice_id' => strval($id),
             'invoice_item_id' => $invoice['line_items'][$lineItemIndex]['line_item_id'],
+            'account_id' => $invoice['line_items'][$lineItemIndex]['account_id'],
             'is_returned_to_stock' => true,
             'is_item_shipped' => false
           ]
