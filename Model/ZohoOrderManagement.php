@@ -245,22 +245,28 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     foreach ($shipment->getItemsCollection() as $item) {
       $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
       // Can only ship Zoho inventory items not groups.
-
-      // Use the Zoho sales order for details as this will
-      // ensure that the data lines up correctly within Zoho
-      // which will reduce errors
       if ($zohoInventory->getZohoType() == 'item') {
+        // Use the Zoho sales order for details as this will
+        // ensure that the data lines up correctly within Zoho
+        // which will reduce errors
         $zohoSolesOrderLine = array_search($zohoInventory->getZohoId(), $zohoSalesOrderItems);
         if ($zohoSolesOrderLine !== false) {
           $zohoSalesOrderItem = $zohoSalesOrder['line_items'][$zohoSolesOrderLine];
-          $lineitems[] = [
-            'so_line_item_id' => $zohoSalesOrderItem['line_item_id'],
-            'quantity' => $zohoSalesOrderItem['quantity']
-          ];
+          if ($zohoSalesOrderItem['quantity'] > $zohoSalesOrderItem['quantity_shipped']) {
+            $lineitems[] = [
+              'so_line_item_id' => $zohoSalesOrderItem['line_item_id'],
+              'quantity' => $zohoSalesOrderItem['quantity']
+            ];
+          }
         } else {
           throw new ZohoItemNotFoundException(__('The item %1 cannot be located on the Zoho sales order %2', $item->getName(), $zohoSalesOrder['salesorder_number']));
         }
       }
+    }
+
+    // Don't create shipment if there are no items to ship
+    if (empty($lineitems)) {
+      return;
     }
 
     $package = [
