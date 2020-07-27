@@ -13,6 +13,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use RTech\Zoho\Webservice\Exception\ZohoItemNotFoundException;
 use RTech\Zoho\Webservice\Exception\ZohoOperationException;
 use Magento\Framework\Exception\LocalizedException;
+use RTech\Zoho\Model\Config\Source\FrontendBackend;
 
 class ZohoOrderManagement implements ZohoOrderManagementInterface {
 
@@ -23,6 +24,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   protected $_estimateValidity;
   protected $_estimateTerms;
   protected $_invoiceTerms;
+  protected $_emailEstimate;
   protected $_stockRegistry;
   protected $_zohoSalesOrderManagementRepository;
   protected $_zohoSalesOrderManagementFactory;
@@ -32,7 +34,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   protected $_groupRepository;
   protected $_coupon;
   protected $_ruleRepository;
-  protected $_priceHelper;
+  protected $_taxItem;
+  protected $_auth;
 
   public function __construct(
     \RTech\Zoho\Helper\ConfigData $configData,
@@ -49,7 +52,9 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     \Magento\Tax\Model\Calculation $taxCalculation,
     \Magento\Customer\Api\GroupRepositoryInterface $groupRepository,
     \Magento\SalesRule\Model\Coupon $coupon,
-    \Magento\SalesRule\Api\RuleRepositoryInterface $ruleRepository
+    \Magento\SalesRule\Api\RuleRepositoryInterface $ruleRepository,
+    \Magento\Sales\Model\ResourceModel\Order\Tax\Item $taxItem,
+    \Magento\Backend\Model\Auth $auth
   ) {
     $this->_zohoBooksClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
     $this->_zohoInventoryClient = new ZohoInventoryClient($configData, $zendClient, $storeManager);
@@ -62,6 +67,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $this->_estimateValidity = $configData->getZohoEstimateValidity($storeId);
     $this->_estimateTerms = $configData->getZohoEstimateTerms($storeId);
     $this->_invoiceTerms = $configData->getZohoInvoiceTerms($storeId);
+    $this->_emailEstimate = $configData->getZohoEstimateEmail($storeId);
     $this->_stockRegistry = $stockRegistry;
     $this->_zohoSalesOrderManagementRepository = $zohoSalesOrderManagementRepository;
     $this->_zohoSalesOrderManagementFactory = $zohoSalesOrderManagementFactory;
@@ -71,24 +77,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $this->_groupRepository = $groupRepository;
     $this->_coupon = $coupon;
     $this->_ruleRepository = $ruleRepository;
-  }
-
-  /**
-  * @inheritdoc
-  */
-  public function quoteEstimate($contactId, $quote, $shippingAmount) {
-    $estimate = [
-      'customer_id' => $contactId,
-      'reference_number' => sprintf('wqt-%06d', $quote->getId()),
-      'expiry_date' => date('Y-m-d', strtotime($quote->getUpdatedAt() . ' + ' . $this->_estimateValidity . 'days')),
-      'is_inclusive_tax' => false,
-      'terms' => $this->_estimateTerms
-    ];
-    array_merge($estimate, $this->createDetails($quote, $shippingAmount));
-    $zohoEstimate = $this->_zohoBooksClient->addEstimate($estimate);
-    $this->_zohoBooksClient->markEstimateSent($zohoEstimate['estimate_id']);
-
-    return $zohoEstimate;
+    $this->_taxItem = $taxItem;
+    $this->_auth = $auth;
   }
 
   /**
@@ -107,10 +97,17 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'notes' => $this->getOrderNotes($order)
     ];
 
-    $estimate = array_merge($estimate, $this->createDetails($order, $order->getBaseShippingAmount()));
+    $estimate = array_merge($estimate, $this->createDetails($order));
 
     $zohoEstimate = $this->_zohoBooksClient->addEstimate($estimate);
     $this->_zohoBooksClient->markEstimateSent($zohoEstimate['estimate_id']);
+
+    // Should the Zoho estimate be emailed to customer
+    if ($this->_emailEstimate === FrontendBackend::BOTH ||
+          ($this->_auth->isLoggedIn() === true && $this->_emailEstimate === FrontendBackend::BACKEND) ||
+          ($this->_auth->isLoggedIn() === false && $this->_emailEstimate === FrontendBackend::FRONTEND)) {
+      $this->_zohoBooksClient->emailEstimate($zohoEstimate['estimate_id'], $order->getCustomerEmail());
+    }
 
     $zohoSalesOrderManagement = $this->_zohoSalesOrderManagementFactory->create();
     $zohoSalesOrderManagement->setData([
@@ -131,7 +128,7 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       'terms' => $this->_estimateTerms
     ];
 
-    $estimate = array_merge($estimate, $this->createDetails($source, $order->getBaseShippingAmount()));
+    $estimate = array_merge($estimate, $this->createDetails($source));
 
     $zohoEstimate = $this->_zohoBooksClient->updateEstimate($estimateId, $estimate);
 
@@ -149,16 +146,16 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   /**
   * @inheritdoc
   */
-  public function createSalesOrder($zohoSalesOrderManagement, $order, $ref) {
+  public function createSalesOrder($zohoSalesOrderManagement, $order) {
     $salesOrder = [
       'customer_id' => $zohoSalesOrderManagement->getZohoId(),
-      'reference_number' => $ref ? : sprintf('web-%06d', $order->getIncrementId()),
+      'reference_number' => sprintf('web-%06d', $order->getIncrementId()),
       'is_inclusive_tax' => false,
       'terms' => $this->_invoiceTerms,
       'notes' => $this->getOrderNotes($order)
     ];
 
-    $salesOrder = array_merge($salesOrder, $this->createDetails($order, $order->getBaseShippingAmount()));
+    $salesOrder = array_merge($salesOrder, $this->createDetails($order));
 
     $zohoSalesOrder = $this->_zohoBooksClient->addSalesOrder($salesOrder);
 
@@ -505,19 +502,15 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     }
   }
 
-  // The subject parameter is either:
-  // -  a \Magento\DSales\Model\Order
-  // -  a \Magento\Quote\Model\Quote
-  // both have the same functions to get the cusomer group id and the line items
-  private function createDetails($subject, $shippingAmount) {
-    $customerTaxId = $this->_groupRepository->getById($subject->getCustomerGroupId())->getTaxClassId();
+  private function createDetails($order) {
+    $customerTaxId = $this->_groupRepository->getById($order->getCustomerGroupId())->getTaxClassId();
 
     $zohoTaxes = $this->_zohoBooksClient->getTaxes();
     //$zeroRate = $taxes[array_search(0, array_column($zohoTaxes, 'tax_percentage'))]['tax_id'];
     //$euVat = $this->_zohoOrderContact->getVatTreatment($items) == 'eu_vat_registered' ? true : false;
 
     $details = [];
-    foreach ($subject->getAllItems() as $item) {
+    foreach ($order->getAllItems() as $item) {
       if ($item->getProductType() != 'configurable' && $item->getProductType() != 'bundle') {
         $zohoInventory = $this->_zohoInventoryRepository->getById($item->getProductId());
 
@@ -540,34 +533,21 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
           'quantity' => $item->getQtyOrdered(),
           'rate' => $item->getPrice(),
           'discount' => sprintf('%01.2f', $item->getDiscountAmount()),
-          'tax_id' => $this->getZohoTaxId($zohoTaxes, $customerTaxId, $item->getProduct()->getTaxClassId()),
+          'tax_id' => $this->getZohoTaxId($item->getTaxPercent(), $zohoTaxes),
           'header_name' => $headerName,
           'description' => $headerName && $parentItem ? '(' . $parentItem->getName() . ')' : ''
         ];
       }
     }
 
-    $details['shipping_charge'] = $shippingAmount;
-    $shippingTaxClass = $this->_scopeConfig->getValue('tax/classes/shipping_tax_class', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-    $details['shipping_charge_tax_id'] = $this->getZohoTaxId($zohoTaxes, $customerTaxId, $shippingTaxClass);
+    $details['shipping_charge'] = $order->getBaseShippingAmount();
+    $details['shipping_charge_tax_id'] = $this->getZohoShippingTaxId($order, $zohoTaxes);
 
     return $details;
   }
 
-  // This function will default the sales tax to either 0% or, if no Zoho tax esists for 0%, 
-  // to the default tax percentage defined in Zoho
-  private function getZohoTaxId($zohoTaxes, $customerTaxId, $productTaxId) {
-    $countryCode = $this->_scopeConfig->getValue(\Magento\Shipping\Model\Config::XML_PATH_ORIGIN_COUNTRY_ID);
-    $taxRate = $this->_taxCalculation->getRate(
-      new \Magento\Framework\DataObject(
-        [
-          'country_id' => $countryCode,
-          'customer_class_id' => $customerTaxId,
-          'product_class_id' => $productTaxId
-        ]
-      )
-    );
-    $index = array_search($taxRate, array_column($zohoTaxes, 'tax_percentage'));
+  private function getZohoTaxId($percent, $zohoTaxes) {
+    $index = array_search($percent, array_column($zohoTaxes, 'tax_percentage'));
     if ($index === false) {
       return '';
     }
@@ -614,5 +594,18 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
       }
     }
     return null;
+  }
+
+  private function getZohoShippingTaxId($order, $zohoTaxes) {
+    $shippingPercent = 0;
+    if ($order->getShippingTaxAmount() > 0) {
+      foreach ($this->_taxItem->getTaxItemsByOrderId($order->getId()) as $taxItem) {
+        if ($taxItem['taxable_item_type'] === 'shipping') {
+          $shippingPercent = $taxItem['tax_percent'];
+          break;
+        }
+      }
+    }
+    return $this->getZohoTaxId($shippingPercent, $zohoTaxes);
   }
 }

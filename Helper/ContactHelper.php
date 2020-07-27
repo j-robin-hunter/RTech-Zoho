@@ -7,36 +7,6 @@ namespace RTech\Zoho\Helper;
 
 class ContactHelper {
 
-  const EU_COUNTRIES = [
-    'AT',
-    'BE',
-    'BG',
-    'CY',
-    'CZ',
-    'DE',
-    'DK',
-    'EE',
-    'ES',
-    'FI',
-    'FR',
-    'GR',
-    'GB',
-    'HR',
-    'HU',
-    'IE',
-    'IT',
-    'LT',
-    'LU',
-    'LV',
-    'MT',
-    'NL',
-    'PL',
-    'PT',
-    'RO',
-    'SE',
-    'SI',
-    'SK'
-  ];
   const ALLOWED_ZOHO_KEYS = [
     'contact_id',
     'contact_name',
@@ -60,17 +30,23 @@ class ContactHelper {
   protected $_regionFactory;
   protected $_configData;
   protected $_storeId;
+  protected $_vat;
+  protected $_scopeConfig;
 
   public function __construct(
     \Magento\Directory\Model\CountryFactory $countryFactory,
     \Magento\Directory\Model\RegionFactory $regionFactory,
     \Rtech\Zoho\Helper\ConfigData $configData,
-    \Magento\Store\Model\StoreManagerInterface $storeManager
+    \Magento\Store\Model\StoreManagerInterface $storeManager,
+    \Magento\Customer\Model\Vat $vat,
+    \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
   ) {
     $this->_countryFactory = $countryFactory;
     $this->_regionFactory = $regionFactory;
     $this->_configData = $configData;
     $this->_storeId = $storeManager->getStore()->getId();
+    $this->_vat = $vat;
+    $this->_scopeConfig = $scopeConfig;
   }
 
   public function getContactArray($prefix, $firstName, $middleName, $lastName, $suffix, $email, $website) {
@@ -140,17 +116,22 @@ class ContactHelper {
     return $contactAddress;
   }
 
-  public function vatBillingTreatment($address, $groupId) {
+  public function vatBillingTreatment($address) {
     $vat = [];
 
     if ($address) {
       $vat['company_name'] = $address->getCompany();
-      if (in_array($address->getCountryId(), self::EU_COUNTRIES)) {
+      if (in_array($address->getCountryId(), explode(',', $this->_scopeConfig->getValue('general/country/eu_countries')))) {
         $vat['vat_reg_no'] = preg_replace('/\s+/', '', $address->getVatId());
         if ($address->getCountryId() == 'GB') {
           $vat['vat_treatment'] = 'uk';
         } else {
-          $vat['vat_treatment'] = ($groupId == $this->_configData->getMagentoEuVatGroupId($this->_storeId)) ? 'eu_vat_registered' : 'eu_vat_not_registered';
+          if ($this->_vat->checkVatNumber($address->getCountryId(), $vat['vat_reg_no'])->getIsValid() === true) {
+            $vat['vat_treatment'] = 'eu_vat_registered';
+          } else {
+            $vat['vat_treatment'] = 'eu_vat_not_registered';
+            $vat['vat_reg_no'] = '';
+          }
         }
         $vat['country_code'] = $vat['vat_reg_no'] ? $address->getCountryId() : '';
       } else {

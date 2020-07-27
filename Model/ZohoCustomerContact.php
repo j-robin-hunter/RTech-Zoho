@@ -76,17 +76,17 @@ class ZohoCustomerContact implements ZohoCustomerContactInterface {
         $contact = $this->_zohoClient->getContact($contact['contact_id']);
       } else {
         // Create a new contact
-        $contact = $this->_zohoClient->addContact(
-          $contact = $this->_contactHelper->getContactArray(
-            $customer->getPrefix(),
-            $customer->getFirstname(),
-            $customer->getMiddlename(),
-            $customer->getLastname(),
-            $customer->getSuffix(),
-            $customer->getEmail(),
-            $customer->getCustomAttribute('website') ? $customer->getCustomAttribute('website')->getValue() : ''
-          )
+        $contact = $this->_contactHelper->getContactArray(
+          $customer->getPrefix(),
+          $customer->getFirstname(),
+          $customer->getMiddlename(),
+          $customer->getLastname(),
+          $customer->getSuffix(),
+          $customer->getEmail(),
+          $customer->getCustomAttribute('website') ? $customer->getCustomAttribute('website')->getValue() : ''
         );
+        $contact['customer_sub_type'] = 'individual';
+        $contact = $this->_zohoClient->addContact($contact);
       }
       // Create entry in zoho_customer table
       $zohoCustomer = $this->_zohoCustomerFactory->create();
@@ -111,6 +111,7 @@ class ZohoCustomerContact implements ZohoCustomerContactInterface {
     $updatedContact['contact_id'] = $contact['contact_id'];
     if (!empty($contact['company_name'])) {
       $updatedContact['contact_name'] = $contact['company_name'];
+      $updatedContact['customer_sub_type'] = 'business';
     } else {
       $updatedContact['contact_name'] = $this->_contactHelper->getContactName(
         $customer->getPrefix(),
@@ -119,6 +120,7 @@ class ZohoCustomerContact implements ZohoCustomerContactInterface {
         $customer->getLastname(),
         $customer->getSuffix()
       );
+      $updatedContact['customer_sub_type'] = 'individual';
     }
     $updatedContact['website'] = $customer->getCustomAttribute('website') ? $customer->getCustomAttribute('website')->getValue() : '';
 

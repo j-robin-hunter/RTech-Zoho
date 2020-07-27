@@ -130,11 +130,12 @@ class AddressRepositoryZohoPlugin {
 
       $zohoAddressId = '';
       if ($addBilling) {
-        $vat = $this->_contactHelper->vatBillingTreatment($address, $customer->getGroupId());
+        $vat = $this->_contactHelper->vatBillingTreatment($address);
         $zohoContact = [
           'contact_id' => $zohoCustomerId,
           'contact_name' => empty($vat['company_name']) ? $contactName : $vat['company_name'],
           'company_name' => empty($vat['company_name']) ? '' : substr(trim($vat['company_name']), 0, 200),
+          'customer_sub_type' => empty($vat['company_name']) ? 'individual' : 'business',
           'vat_reg_no' => $vat['vat_reg_no'] ?? '',
           'vat_treatment' => $vat['vat_treatment'],
           'country_code' => $vat['country_code'] ?? '',

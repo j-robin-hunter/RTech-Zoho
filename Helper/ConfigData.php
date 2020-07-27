@@ -22,6 +22,7 @@ class ConfigData extends AbstractHelper
   const ZOHO_SHIPPING_SKU = 'zoho/inventory/shipping_sku';
   const ZOHO_BOOKS_ESTIMATE_VALIDITY = 'zoho/estimate/validity';
   const ZOHO_BOOKS_ESTIMATE_TERMS = 'zoho/estimate/terms';
+  const ZOHO_BOOKS_ESTIMATE_EMAIL = 'zoho/estimate/email';
   const ZOHO_BOOKS_INVOICE_TERMS = 'zoho/invoice/terms';
 
   protected $scopeConfig;
@@ -74,32 +75,6 @@ class ConfigData extends AbstractHelper
     );
   }
 
-  public function getMagentoEuVatGroupId($storeId) {$groupName = (string)$this->scopeConfig->getValue(
-      self::MAGENTO_EU_VAT_GROUP,
-      ScopeInterface::SCOPE_STORE,
-      $storeId
-    );
-
-    $generalFilter[] = $this->filterBuilder
-      ->setField('customer_group_code')
-      ->setConditionType('eq')
-      ->setValue($groupName)
-      ->create();
-
-    $searchCriteria = $this->searchCriteriaBuilder
-      ->addFilters($generalFilter)
-      ->create();
-
-    if ($this->customerGroups === null) {
-      $this->customerGroups = [];
-      foreach ($this->groupRepository->getList($searchCriteria)->getItems() as $item) {
-        $this->customerGroups[] = $item->getId();
-      }
-    }
-
-    return count($this->customerGroups) > 0 ? $this->customerGroups[0] : null;
-  }
-
   public function getZohoInventoryEnabled($storeId) {
     return (string)$this->scopeConfig->getValue(
       self::ZOHO_INVENTORY_ENABLED,
@@ -143,6 +118,14 @@ class ConfigData extends AbstractHelper
   public function getZohoEstimateTerms($storeId) {
     return (string)$this->scopeConfig->getValue(
       self::ZOHO_BOOKS_ESTIMATE_TERMS,
+      ScopeInterface::SCOPE_STORE,
+      $storeId
+    );
+  }
+
+  public function getZohoEstimateEmail($storeId) {
+    return (int)$this->scopeConfig->getValue(
+      self::ZOHO_BOOKS_ESTIMATE_EMAIL,
       ScopeInterface::SCOPE_STORE,
       $storeId
     );

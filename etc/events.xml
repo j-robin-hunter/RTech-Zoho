@@ -18,8 +18,5 @@
   <event name="sales_order_invoice_pay">
     <observer name="zoho_sales_order_invoice_pay" instance="RTech\Zoho\Observer\SalesOrderInvoicePay"/>
   </event>
-  <event name="saved_quote_saved_after">
-    <observer name="zoho_saved_quote_saved_after" instance="RTech\Zoho\Observer\SavedQuoteSavedAfter"/>
-  </event>
 
 </config>

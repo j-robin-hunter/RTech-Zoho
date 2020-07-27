@@ -8,16 +8,6 @@ namespace RTech\Zoho\Api\Data;
 interface ZohoOrderManagementInterface {
 
   /**
-  * Create Zoho estimate from a quote
-  *
-  * @param string $contactId
-  * @param Magento\Quote\Model\Quote $quote
-  * @param float $shippingAmount
-  * @return array
-  */
-  public function quoteEstimate($contactId, $quote, $shippingAmount);
-
-  /**
   * Create Zoho estimate from an order
   *
   * @param Magento\Sales\Model\Order $order
@@ -48,10 +38,9 @@ interface ZohoOrderManagementInterface {
   *
   * @param RTech\Zoho\Data\ZohoSalesOrderManagementInterface $zohoSalesOrderManagement
   * @param Magento\Sales\Model\Order $order
-  * @param string|null $ref
   * @return RTech\Zoho\Data\ZohoSalesOrderManagementInterface
   */
-  public function createSalesOrder($zohoSalesOrderManagement, $order, $ref);
+  public function createSalesOrder($zohoSalesOrderManagement, $order);
 
   /**
   * Mark Zoho sales order open

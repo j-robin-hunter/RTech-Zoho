@@ -51,18 +51,24 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
 
       if (!$contact) {
         // Create a new contact
-        $contact = $this->_zohoClient->addContact(
-          $contact = $this->_contactHelper->getContactArray(
-            $order->getCustomerPrefix(),
-            $order->getCustomerFirstname(),
-            $order->getCustomerMiddlename(),
-            $order->getCustomerLastname(),
-            $order->getCustomerSuffix(),
-            $order->getCustomerEmail(),
-            $order->getCustomerWebsite()
-          )
+
+        $contact = $this->_contactHelper->getContactArray(
+          $order->getCustomerPrefix(),
+          $order->getCustomerFirstname(),
+          $order->getCustomerMiddlename(),
+          $order->getCustomerLastname(),
+          $order->getCustomerSuffix(),
+          $order->getCustomerEmail(),
+          $order->getCustomerWebsite()
         );
+        if (empty($order->getBillingAddress()->getCompany())) {
+          $contact['customer_sub_type'] = 'individual';
+        } else {
+          $contact['customer_sub_type'] = 'business';
+        }
+        $contact = $this->_zohoClient->addContact($contact);
       }
+
       if ($order->getCustomerId()) {
         // Not a guest so create entry in zoho_customer table
         $zohoCustomer = $this->_zohoCustomerFactory->create();
@@ -94,7 +100,7 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
     if (empty($order->getCustomerId())) {
       $billingAddress = $order->getBillingAddress();
       $shippingAddress = $order->getShippingAddress();
-      $vat = $this->_contactHelper->vatBillingTreatment($billingAddress, $order->getCustomerGroupId());
+      $vat = $this->_contactHelper->vatBillingTreatment($billingAddress);
 
       $contact = [
         'contact_id' => $contact['contact_id'],
@@ -103,7 +109,8 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
         'vat_treatment' => $vat['vat_treatment'],
         'country_code' => $vat['country_code'],
         'billing_address' => $this->_contactHelper->getAddressArray($billingAddress),
-        'shipping_address' => $this->_contactHelper->getAddressArray($shippingAddress)
+        'shipping_address' => $this->_contactHelper->getAddressArray($shippingAddress),
+        'customer_sub_type' => empty($billingAddress->getCompany()) ? 'individual' : 'business'
       ];
 
       try {
@@ -122,7 +129,7 @@ class ZohoOrderContact implements ZohoOrderContactInterface {
   }
 
   public function getVatTreatment($order) {
-    $vat = $this->_contactHelper->vatBillingTreatment($order->getBillingAddress(), $order->getCustomerGroupId());
+    $vat = $this->_contactHelper->vatBillingTreatment($order->getBillingAddress());
     return $vat['vat_treatment'];
   }
 

@@ -38,46 +38,16 @@ class SalesOrderSaveAfter implements ObserverInterface {
 
   public function execute(\Magento\Framework\Event\Observer $observer) {
     $order = $observer->getEvent()->getOrder();
-    $soRef = null;
+
     try {
       // Get the existing state of the order between Magento and Zoho
       $zohoSalesOrderManagement = $this->_zohoSalesOrderManagementRepository->getById($order->getId());
     } catch (NoSuchEntityException $e) {
       // No record of the order so start by creating a Zoho estimate
       try {
-        // Use object manager to see if a quote has been created.
-        // Not using DI as the Quote module may not have been loaded
-        $savedQuote = null;
-        $savedQuoteRepository = $this->_objectManager->get('RTech\Quote\Model\QuoteRepository');
-        if ($savedQuoteRepository) {
-          try {
-            $savedQuote = $savedQuoteRepository->getById($order->getQuoteId());
-             $savedQuote->getEstimateId();
-          } catch (\Exception $e) {
-            // There is no saved quote
-            $savedQuote = null;
-          }
-        }
-        if ($savedQuote === null) {
-          $zohoSalesOrderManagement = $this->_zohoOrderManagement->orderEstimate($order);
-        } else {
-          $zohoCustomer = $this->_zohoCustomerRepository->getById($savedQuote->getCustomerId());
-          $estimate = $this->_zohoOrderManagement->updateEstimate(
-            $savedQuote->getEstimateId(),
-            $zohoCustomer->getZohoId(),
-            $order,
-            $order->getBaseShippingAmount());
-          $soRef = $estimate['reference_number'];
-          $zohoSalesOrderManagement = $this->_zohoSalesOrderManagementFactory->create();
-          $zohoSalesOrderManagement->setData([
-            ZohoSalesOrderManagementInterface::ORDER_ID => $order->getId(),
-            ZohoSalesOrderManagementInterface::ZOHO_ID => $zohoCustomer->getZohoId(),
-            ZohoSalesOrderManagementInterface::ESTIMATE_ID => $savedQuote->getEstimateId()
-          ]);
-          $savedQuoteRepository->delete($savedQuote);
-        }
+        $zohoSalesOrderManagement = $this->_zohoOrderManagement->orderEstimate($order);
       } catch (\Exception $e) {
-        $this->_logger->error(__('Error while creating Zoho estimate'), ['exception' => $e]);
+        $this->_logger->error(__('Error while creating Zoho estimate: '. $e->getMessage()));
         throw $e;
       }
     }
@@ -85,10 +55,8 @@ class SalesOrderSaveAfter implements ObserverInterface {
     try {
       switch ($order->getState()) {
         case \Magento\Sales\Model\Order::STATE_NEW:
-          if (!$zohoSalesOrderManagement->getSalesOrderId()) {
-            // A new order that at this point would have had an estimate created
-            $zohoSalesOrderManagement = $this->_zohoOrderManagement->createSalesOrder($zohoSalesOrderManagement, $order, $soRef);
-          }
+        // Do nothing here as an estimate will have been created but there is no need to
+        // create a Zoho sales order until the Magento2 order reaches processing state
           break;
 
         case \Magento\Sales\Model\Order::STATE_PENDING_PAYMENT:
@@ -96,9 +64,8 @@ class SalesOrderSaveAfter implements ObserverInterface {
           break;
 
           case \Magento\Sales\Model\Order::STATE_PROCESSING:
-          // In the event no Zoho sales order has been created, create one
           if (!$zohoSalesOrderManagement->getSalesOrderId()) {
-            $zohoSalesOrderManagement = $this->_zohoOrderManagement->createSalesOrder($zohoSalesOrderManagement, $order, $soRef);
+            $zohoSalesOrderManagement = $this->_zohoOrderManagement->createSalesOrder($zohoSalesOrderManagement, $order);
           }
           // As this order is to be invoiced with respect to Magento, accept the Zoho estimate,
           // mark the sales order as open, which allows purchase orders, invoices and shipping to

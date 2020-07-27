@@ -75,6 +75,14 @@ interface ZohoBooksClientInterface {
   * Mark an estimate in Zoho Books as sent
   *
   * @param string $estimateId
+  * @param string $to
+  */
+  public function emailEstimate($estimateId, $to);
+
+  /**
+  * Mark an estimate in Zoho Books as sent
+  *
+  * @param string $estimateId
   */
   public function markEstimateSent($estimateId);
 

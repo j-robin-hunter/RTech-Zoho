@@ -63,6 +63,11 @@
           <label>Terms &amp; Conditons</label>
           <comment>Terms &amp; conditions text to be added to estimates</comment>
         </field>
+        <field id="email" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Email Customer From</label>
+          <source_model>RTech\Zoho\Model\Config\Source\FrontendBackend</source_model>
+          <comment>Enable Zoho sending of email for estimates created from this area</comment>
+        </field>
       </group>
 
       <group id="invoice" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">

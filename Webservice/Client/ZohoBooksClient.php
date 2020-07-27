@@ -132,6 +132,18 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   /**
   * @inheritdoc
   */
+  public function emailEstimate($estimateId, $to) {
+    try {
+      return $this->callZoho(self::ESTIMATES_API .'/' . $estimateId . '/email', self::POST, ['JSONString' => json_encode(['to_mail_ids' => [$to]], true)]);
+    } catch (\Exception $e) {
+      $this->_logger->error(__('Zoho API Error: emailEstimate'), ['exception' => $e]);
+      throw $e;
+    }
+  }
+
+  /**
+  * @inheritdoc
+  */
   public function markEstimateSent($estimateId) {
     try {
       $this->callZoho(self::ESTIMATES_API .'/' . $estimateId . '/status/sent', self::POST, []);
