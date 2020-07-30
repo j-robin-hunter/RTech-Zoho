@@ -206,7 +206,11 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   */
   public function getSalesOrder($salesOrderId) {
     try {
-      return $this->callZoho(self::SALESORDERS_API . '/' . $salesOrderId, self::GET, [])['salesorder'];
+      $response = $this->callZoho(self::SALESORDERS_API . '/' . $salesOrderId, self::GET, []);
+      if (isset($response['salesorder'])) {
+        return $response['salesorder'];
+      }
+      throw new ZohoItemNotFoundException(__('No sales order'));
     } catch (\Exception $e) {
       $this->_logger->error(__('Zoho API Error: getSalesOrder'), ['exception' => $e]);
       throw $e;
