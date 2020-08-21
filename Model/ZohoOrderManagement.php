@@ -34,7 +34,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
   protected $_groupRepository;
   protected $_coupon;
   protected $_ruleRepository;
-  protected $_taxItem;
   protected $_auth;
 
   public function __construct(
@@ -53,7 +52,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     \Magento\Customer\Api\GroupRepositoryInterface $groupRepository,
     \Magento\SalesRule\Model\Coupon $coupon,
     \Magento\SalesRule\Api\RuleRepositoryInterface $ruleRepository,
-    \Magento\Sales\Model\ResourceModel\Order\Tax\Item $taxItem,
     \Magento\Backend\Model\Auth $auth
   ) {
     $this->_zohoBooksClient = new ZohoBooksClient($configData, $zendClient, $storeManager);
@@ -77,7 +75,6 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
     $this->_groupRepository = $groupRepository;
     $this->_coupon = $coupon;
     $this->_ruleRepository = $ruleRepository;
-    $this->_taxItem = $taxItem;
     $this->_auth = $auth;
   }
 
@@ -598,13 +595,8 @@ class ZohoOrderManagement implements ZohoOrderManagementInterface {
 
   private function getZohoShippingTaxId($order, $zohoTaxes) {
     $shippingPercent = 0;
-    if ($order->getShippingTaxAmount() > 0) {
-      foreach ($this->_taxItem->getTaxItemsByOrderId($order->getId()) as $taxItem) {
-        if ($taxItem['taxable_item_type'] === 'shipping') {
-          $shippingPercent = $taxItem['tax_percent'];
-          break;
-        }
-      }
+    if ($order->getShippingTaxAmount() > 0 && $order->getShippingAmount() > 0) {
+      $shippingPercent = round(($order->getShippingTaxAmount() / $order->getShippingAmount()) * 100, 2);
     }
     return $this->getZohoTaxId($shippingPercent, $zohoTaxes);
   }
