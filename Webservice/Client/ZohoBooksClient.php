@@ -22,10 +22,8 @@ class ZohoBooksClient extends AbstractZohoClient implements ZohoBooksClientInter
   ) {
     $storeId = $storeManager->getStore()->getId();
     $endpoint = $configData->getZohoBooksEndpoint($storeId);
-    $key = $configData->getZohoBooksKey($storeId);
-    $organisationId = $configData->getZohoOrganistionId($storeId);
     $this->_logger = \Magento\Framework\App\ObjectManager::getInstance()->get(\Psr\Log\LoggerInterface::class);
-    parent::__construct($zendClient, $endpoint, $key, $organisationId);
+    parent::__construct($zendClient, $configData, $storeManager, $endpoint);
   }
 
   /**

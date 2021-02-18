@@ -11,13 +11,14 @@ use Magento\Store\Model\ScopeInterface;
 
 class ConfigData extends AbstractHelper
 {
-  const ZOHO_ORGANISATION_ID = 'zoho/organisation/id';
+  const ZOHO_AUTH_URL = 'zoho/organisation/authurl';
+  const ZOHO_REFRESH_TOKEN = 'zoho/organisation/refreshtoken';
+  const ZOHO_CLIENT_ID = 'zoho/organisation/clientid';
+  const ZOHO_CLIENT_SECRET = 'zoho/organisation/clientsecret';
   const ZOHO_BOOKS_ENABLED  = 'zoho/books/enabled';
-  const ZOHO_BOOKS_KEY  = 'zoho/books/api_key';
   const ZOHO_BOOKS_ENDPOINT = 'zoho/books/url';
   const MAGENTO_EU_VAT_GROUP = 'zoho/books/eu_vat_group';
   const ZOHO_INVENTORY_ENABLED  = 'zoho/inventory/enabled';
-  const ZOHO_INVENTORY_KEY  = 'zoho/inventory/api_key';
   const ZOHO_INVENTORY_ENDPOINT = 'zoho/inventory/url';
   const ZOHO_SHIPPING_SKU = 'zoho/inventory/shipping_sku';
   const ZOHO_BOOKS_ESTIMATE_VALIDITY = 'zoho/estimate/validity';
@@ -42,10 +43,34 @@ class ConfigData extends AbstractHelper
     $this->searchCriteriaBuilder = $searchCriteriaBuilder;
     $this->filterBuilder = $filterBuilder;
   }
-
-  public function getZohoOrganistionId($storeId) {
+  
+  public function getZohoAuthUrl($storeId) {
     return (string)$this->scopeConfig->getValue(
-      self::ZOHO_ORGANISATION_ID,
+      self::ZOHO_AUTH_URL,
+      ScopeInterface::SCOPE_STORE,
+      $storeId
+    );
+  }
+
+  public function getZohoRefreshToken($storeId) {
+    return (string)$this->scopeConfig->getValue(
+      self::ZOHO_REFRESH_TOKEN,
+      ScopeInterface::SCOPE_STORE,
+      $storeId
+    );
+  }
+  
+  public function getZohoClientId($storeId) {
+    return (string)$this->scopeConfig->getValue(
+      self::ZOHO_CLIENT_ID,
+      ScopeInterface::SCOPE_STORE,
+      $storeId
+    );
+  }
+  
+  public function getZohoClientSecret($storeId) {
+    return (string)$this->scopeConfig->getValue(
+      self::ZOHO_CLIENT_SECRET,
       ScopeInterface::SCOPE_STORE,
       $storeId
     );
@@ -54,14 +79,6 @@ class ConfigData extends AbstractHelper
   public function getZohoBooksEnabled($storeId) {
     return (string)$this->scopeConfig->getValue(
       self::ZOHO_BOOKS_ENABLED,
-      ScopeInterface::SCOPE_STORE,
-      $storeId
-    );
-  }
-
-  public function getZohoBooksKey($storeId) {
-    return (string)$this->scopeConfig->getValue(
-      self::ZOHO_BOOKS_KEY,
       ScopeInterface::SCOPE_STORE,
       $storeId
     );
@@ -78,14 +95,6 @@ class ConfigData extends AbstractHelper
   public function getZohoInventoryEnabled($storeId) {
     return (string)$this->scopeConfig->getValue(
       self::ZOHO_INVENTORY_ENABLED,
-      ScopeInterface::SCOPE_STORE,
-      $storeId
-    );
-  }
-
-  public function getZohoInventoryKey($storeId) {
-    return (string)$this->scopeConfig->getValue(
-      self::ZOHO_INVENTORY_KEY,
       ScopeInterface::SCOPE_STORE,
       $storeId
     );

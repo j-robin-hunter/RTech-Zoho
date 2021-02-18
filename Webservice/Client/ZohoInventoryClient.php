@@ -21,9 +21,7 @@ class ZohoInventoryClient extends AbstractZohoClient implements ZohoInventoryCli
   ) {
     $storeId = $storeManager->getStore()->getId();
     $endpoint = $configData->getZohoInventoryEndpoint($storeId);
-    $key = $configData->getZohoInventoryKey($storeId);
-    $organisationId = $configData->getZohoOrganistionId($storeId);
-    parent::__construct($zendClient, $endpoint, $key, $organisationId);
+    parent::__construct($zendClient, $configData, $storeManager, $endpoint);
   }
 
   /**

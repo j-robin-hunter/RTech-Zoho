@@ -38,30 +38,38 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
 
   protected $_zendClient;
   protected $_endpoint;
-  protected $_key;
-  protected $_organisationId;
+  protected $_baseUrl;
+  protected $_authUrl;
+  protected $_refreshToken;
+  protected $_clientId;
+  protected $_clientSecret;
   protected $_logger;
 
   public function __construct(
     \Zend\Http\Client $zendClient,
-    string $endpoint,
-    string $key,
-    string $organisationId
+    \RTech\Zoho\Helper\ConfigData $configData,
+    \Magento\Store\Model\StoreManagerInterface $storeManager,
+    string $endpoint
   ) {
     $this->_zendClient = $zendClient;
     $this->_endpoint = $endpoint;
-    $this->_key = $key;
-    $this->_organisationId = $organisationId;
+    $storeId = $storeManager->getStore()->getId();
+    $this->_baseUrl = $storeManager->getStore()->getBaseUrl();
+    $this->_authUrl = $configData->getZohoAuthUrl($storeId);
+    $this->_refreshToken = $configData->getZohoRefreshToken($storeId);
+    $this->_clientId = $configData->getZohoClientId($storeId);
+    $this->_clientSecret = $configData->getZohoClientSecret($storeId);
     $this->_logger = \Magento\Framework\App\ObjectManager::getInstance()->get(\Psr\Log\LoggerInterface::class);
   }
 
   protected function callZoho($api, $method, $parameters, $imageFile=null) {
+    $accessToken = $this->getAccessToken();
     $this->_zendClient->reset();
     $this->_zendClient->setUri($this->_endpoint . '/' . $api);
     $this->_zendClient->setMethod($method);
-
-    $parameters['authtoken'] = $this->_key;
-    $parameters['organization_id'] = $this->_organisationId;
+    $headers = new \Zend\Http\Headers;
+    $headers->addHeaderLine('Authorization', 'Zoho-oauthtoken ' . $accessToken);
+    $this->_zendClient->setHeaders($headers);
 
     if ($method === self::GET || $method === self::DELETE) {
       $this->_zendClient->setParameterGet($parameters);
@@ -109,6 +117,27 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
     return json_decode($response->getBody(), true);
   }
 
+  private function getAccessToken() {
+    $this->_zendClient->reset();
+    $this->_zendClient->setUri($this->_authUrl . '/token');
+    $this->_zendClient->setMethod(self::POST);
+
+    $parameters['refresh_token'] = $this->_refreshToken;
+    $parameters['grant_type'] = 'refresh_token';
+    $parameters['client_id'] = $this->_clientId;
+    $parameters['client_secret'] = $this->_clientSecret;
+    $parameters['redirect_uri'] = $this->_baseUrl;
+
+    $this->_zendClient->setParameterPost($parameters);
+    try {
+      $this->_zendClient->send();
+      $response = $this->_zendClient->getResponse();
+    }
+    catch (\Zend\Http\Exception\RuntimeException $runtimeException) {
+      throw ZohoCommunicationException::runtime($runtimeException->getMessage());
+    }
+    return json_decode($response->getBody(), true)['access_token'] ?? '';
+  }
   /**
   * @inheritdoc
   */

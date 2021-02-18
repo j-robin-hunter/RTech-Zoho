@@ -21,16 +21,22 @@
 
       <group id="organisation" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
         <label>Organisation</label>
-        <field id="id" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
-          <label>Organisation ID</label>
+        <field id="authurl" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Authorisation URL</label>
+        </field>
+        <field id="refreshtoken" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Refresh Token</label>
+        </field>
+        <field id="clientid" translate="label" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Client ID</label>
+        </field>
+        <field id="clientsecret" translate="label" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Client Secret</label>
         </field>
       </group>
 
       <group id="books" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
         <label>Books</label>
-        <field id="api_key" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
-          <label>API Key</label>
-        </field>
         <field id="url" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
           <label>Endpoint</label>
           <comment>API endpoint URL</comment>
@@ -44,9 +50,6 @@
 
       <group id="inventory" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
         <label>Inventory</label>
-        <field id="api_key" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
-          <label>API Key</label>
-        </field>
         <field id="url" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
           <label>Endpoint</label>
           <comment>API endpoint URL</comment>
