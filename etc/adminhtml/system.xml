@@ -56,7 +56,15 @@
         </field>
       </group>
 
-      <group id="estimate" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+      <group id="crm" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+        <label>CRM</label>
+        <field id="url" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+          <label>Endpoint</label>
+          <comment>API endpoint URL</comment>
+        </field>
+      </group>
+
+      <group id="estimate" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
         <label>Estimates</label>
         <field id="validity" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
           <label>Estimate Validity </label>
@@ -73,7 +81,7 @@
         </field>
       </group>
 
-      <group id="invoice" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+      <group id="invoice" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
         <label>Invoices</label>
         <field id="terms" translate="label" type="textarea" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
           <label>Terms &amp; Conditons</label>

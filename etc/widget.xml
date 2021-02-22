@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!--
+/**
+* Copyright 2021 © Roma Technology Ltd. All rights reserved.
+* See COPYING.txt for license details.
+**/
+-->
+<widgets xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Widget:etc/widget.xsd">
+
+  <widget id="rtech_zoho_zohoform"
+          class="RTech\Zoho\Block\ZohoForm"
+          placeholder_image="RTech_Zoho::images/rtech_zoho_zohoform.png">
+    <label translate="true">RTech Zoho Form</label>
+    <description translate="true">RTech Zoho form widget</description>
+    <parameters>
+      <parameter name="form_url" xsi:type="text" visible="true" required="true">
+        <label translate="true">Zoho Form URL</label>
+      </parameter>
+      <parameter name="form_map" xsi:type="text" visible="true" required="true">
+        <label translate="true">Zoho CRM Field Mapping</label>
+      </parameter>
+    </parameters>
+  </widget>
+
+</widgets>

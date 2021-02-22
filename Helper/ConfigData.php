@@ -21,6 +21,7 @@ class ConfigData extends AbstractHelper
   const ZOHO_INVENTORY_ENABLED  = 'zoho/inventory/enabled';
   const ZOHO_INVENTORY_ENDPOINT = 'zoho/inventory/url';
   const ZOHO_SHIPPING_SKU = 'zoho/inventory/shipping_sku';
+  const ZOHO_CRM_ENDPOINT = 'zoho/crm/url';
   const ZOHO_BOOKS_ESTIMATE_VALIDITY = 'zoho/estimate/validity';
   const ZOHO_BOOKS_ESTIMATE_TERMS = 'zoho/estimate/terms';
   const ZOHO_BOOKS_ESTIMATE_EMAIL = 'zoho/estimate/email';
@@ -111,6 +112,14 @@ class ConfigData extends AbstractHelper
   public function getZohoShippingSku($storeId) {
     return (string)$this->scopeConfig->getValue(
       self::ZOHO_SHIPPING_SKU,
+      ScopeInterface::SCOPE_STORE,
+      $storeId
+    );
+  }
+
+  public function getZohoCrmEndpoint($storeId) {
+    return (string)$this->scopeConfig->getValue(
+      self::ZOHO_CRM_ENDPOINT,
       ScopeInterface::SCOPE_STORE,
       $storeId
     );
