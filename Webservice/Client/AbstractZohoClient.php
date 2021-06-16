@@ -118,25 +118,35 @@ abstract class AbstractZohoClient implements ZohoClientInterface {
   }
 
   private function getAccessToken() {
-    $this->_zendClient->reset();
-    $this->_zendClient->setUri($this->_authUrl . '/token');
-    $this->_zendClient->setMethod(self::POST);
+    $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+    $session = $objectManager->get('Magento\Customer\Model\Session');
+    $accessToken = $session->getAccess() ?? null;
+    $expires = intval($session->getExpires()) ?? '0';
+    if (time() > $expires) {
+      $this->_zendClient->reset();
+      $this->_zendClient->setUri($this->_authUrl . '/token');
+      $this->_zendClient->setMethod(self::POST);
 
-    $parameters['refresh_token'] = $this->_refreshToken;
-    $parameters['grant_type'] = 'refresh_token';
-    $parameters['client_id'] = $this->_clientId;
-    $parameters['client_secret'] = $this->_clientSecret;
-    $parameters['redirect_uri'] = $this->_baseUrl;
+      $parameters['refresh_token'] = $this->_refreshToken;
+      $parameters['grant_type'] = 'refresh_token';
+      $parameters['client_id'] = $this->_clientId;
+      $parameters['client_secret'] = $this->_clientSecret;
+      $parameters['redirect_uri'] = $this->_baseUrl;
 
-    $this->_zendClient->setParameterPost($parameters);
-    try {
-      $this->_zendClient->send();
-      $response = $this->_zendClient->getResponse();
+      $this->_zendClient->setParameterPost($parameters);
+      try {
+        $this->_zendClient->send();
+        $response = $this->_zendClient->getResponse();
+      }
+      catch (\Zend\Http\Exception\RuntimeException $runtimeException) {
+        throw ZohoCommunicationException::runtime($runtimeException->getMessage());
+      }
+      $oauth = json_decode($response->getBody(), true);
+      $accessToken = $oauth['access_token'];
+      $session->setAccess($accessToken);
+      $session->setExpires(strval(time() + $oauth['expires_in'] - 10));
     }
-    catch (\Zend\Http\Exception\RuntimeException $runtimeException) {
-      throw ZohoCommunicationException::runtime($runtimeException->getMessage());
-    }
-    return json_decode($response->getBody(), true)['access_token'] ?? '';
+    return $accessToken;
   }
   /**
   * @inheritdoc
